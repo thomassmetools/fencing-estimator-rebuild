@@ -5,7 +5,6 @@ import { AdminProductsTable } from "../components/AdminProductsTable";
 import { AdminSettingsForm } from "../components/AdminSettingsForm";
 import { useAuth } from "../hooks/useAuth";
 import { fetchAdminContractor, fetchLeadEvents, replaceProducts, updateContractorSettings } from "../lib/repository";
-import { supabaseEnvStatus } from "../lib/supabase";
 import type { ContractorRecord, LeadRecord, Product } from "../types";
 
 interface AdminPageProps {
@@ -77,9 +76,6 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
         <div className="empty-state">
           <h1>Supabase setup required</h1>
           <p>Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` before using contractor admin routes.</p>
-          <p className="helper-text">
-            Debug: URL present = {String(supabaseEnvStatus.hasUrl)}, anon key present = {String(supabaseEnvStatus.hasAnonKey)}
-          </p>
         </div>
       </main>
     );
