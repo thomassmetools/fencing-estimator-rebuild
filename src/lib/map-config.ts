@@ -1,8 +1,9 @@
 export const mapboxAccessToken =
-  import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || "";
+  import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
+  "pk.eyJ1IjoidGhvbWFzMTNob3dpZSIsImEiOiJjbW50NzdqdngwazlkMnBwcGRvdW1qbTUxIn0.OhVhBMFaoQ09UHuEukj8CA";
 
 export const turnstileSiteKey =
-  import.meta.env.VITE_TURNSTILE_SITE_KEY || "";
+  import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAAC6NdHns6MZVXgFh";
 
 export const hasMapboxAccessToken = Boolean(mapboxAccessToken);
 export const hasTurnstileSiteKey = Boolean(turnstileSiteKey);
