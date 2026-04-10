@@ -41,6 +41,7 @@ type LeadRow = {
   measurement_mode: "distance" | "area" | null;
   measurement_value: number | null;
   measurement_unit: string | null;
+  measurement_points: { lat: number; lng: number }[] | null;
   estimated_total: number | null;
   selected_products_summary: string[] | null;
   source: "copy" | "submit";
@@ -86,6 +87,7 @@ const leadColumns = `
   measurement_mode,
   measurement_value,
   measurement_unit,
+  measurement_points,
   estimated_total,
   selected_products_summary,
   source,
@@ -147,6 +149,7 @@ const mapLead = (row: LeadRow): LeadRecord => ({
   measurementMode: row.measurement_mode,
   measurementValue: row.measurement_value,
   measurementUnit: row.measurement_unit,
+  measurementPoints: row.measurement_points ?? [],
   estimatedTotal: row.estimated_total,
   selectedProductsSummary: row.selected_products_summary ?? [],
   source: row.source,
@@ -313,7 +316,7 @@ export const replaceProducts = async (contractorId: string, products: Product[])
   }
 };
 
-export const createLeadEvent = async ({
+export const submitLeadEvent = async ({
   contractorId,
   customerName,
   customerEmail,
@@ -322,7 +325,7 @@ export const createLeadEvent = async ({
   measurement,
   estimatedTotal,
   selectedProductsSummary,
-  source,
+  turnstileToken,
 }: {
   contractorId: string;
   customerName: string;
@@ -332,11 +335,11 @@ export const createLeadEvent = async ({
   measurement: MeasurementResult | null;
   estimatedTotal: number | null;
   selectedProductsSummary: string[];
-  source: "copy" | "submit";
+  turnstileToken: string;
 }) => {
   const supabase = getSupabaseClient();
   if (!supabase) {
-    return null;
+    throw new Error("Supabase is not configured.");
   }
 
   const payload = {
@@ -348,12 +351,16 @@ export const createLeadEvent = async ({
     measurement_mode: measurement?.mode ?? null,
     measurement_value: measurement?.value ?? null,
     measurement_unit: measurement?.unitLabel ?? null,
+    measurement_points: measurement?.points ?? [],
     estimated_total: estimatedTotal,
     selected_products_summary: selectedProductsSummary,
-    source,
+    source: "submit",
+    turnstile_token: turnstileToken,
   };
 
-  const { data, error } = await supabase.from("lead_events").insert(payload).select(leadColumns).single();
+  const { data, error } = await supabase.functions.invoke("submit-lead", {
+    body: payload,
+  });
 
   if (error) {
     throw error;

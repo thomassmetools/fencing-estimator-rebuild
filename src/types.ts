@@ -1,5 +1,10 @@
 export type MeasurementMode = "distance" | "area";
 
+export interface MapPoint {
+  lat: number;
+  lng: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -44,6 +49,7 @@ export interface MeasurementResult {
   value: number;
   unitLabel: string;
   pointCount: number;
+  points: MapPoint[];
 }
 
 export interface SelectedProduct {
@@ -61,6 +67,7 @@ export interface LeadRecord {
   measurementMode: MeasurementMode | null;
   measurementValue: number | null;
   measurementUnit: string | null;
+  measurementPoints: MapPoint[];
   estimatedTotal: number | null;
   selectedProductsSummary: string[];
   source: "copy" | "submit";

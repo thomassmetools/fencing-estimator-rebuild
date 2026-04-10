@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { TurnstileWidget } from "./TurnstileWidget";
 import { buildResultMessage, currency, estimateProductSubtotal } from "../lib/estimate";
-import { createLeadEvent } from "../lib/repository";
+import { submitLeadEvent } from "../lib/repository";
 import type { ContractorRecord, MeasurementResult, Product } from "../types";
 
 interface ResultComposerProps {
@@ -20,6 +21,7 @@ export const ResultComposer = ({
 }: ResultComposerProps) => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [copyLabel, setCopyLabel] = useState("Copy result");
   const [submitStatus, setSubmitStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -43,38 +45,39 @@ export const ResultComposer = ({
     });
   }, [contractor, customerName, measurement, selectedProducts]);
 
-  const persistLead = async (source: "copy" | "submit") => {
-    await createLeadEvent({
-      contractorId: contractor.id,
-      customerName,
-      customerEmail,
-      customerPhone,
-      message,
-      measurement,
-      estimatedTotal: estimatedTotal || null,
-      selectedProductsSummary,
-      source,
-    });
-  };
-
   const copyMessage = async () => {
-    setError(null);
     await navigator.clipboard.writeText(message);
     setCopyLabel("Copied");
-    try {
-      await persistLead("copy");
-    } catch (leadError) {
-      setError(leadError instanceof Error ? leadError.message : "Lead capture failed after copying.");
-    }
     window.setTimeout(() => setCopyLabel("Copy result"), 1800);
   };
 
   const submitLead = async () => {
+    if (!measurement) {
+      setError("Please save a measurement before submitting the lead.");
+      return;
+    }
+
+    if (!turnstileToken) {
+      setError("Please complete the bot check before submitting.");
+      return;
+    }
+
     setSubmitStatus("saving");
     setError(null);
     try {
-      await persistLead("submit");
+      await submitLeadEvent({
+        contractorId: contractor.id,
+        customerName,
+        customerEmail,
+        customerPhone,
+        message,
+        measurement,
+        estimatedTotal: estimatedTotal || null,
+        selectedProductsSummary,
+        turnstileToken,
+      });
       setSubmitStatus("saved");
+      setTurnstileToken("");
       window.setTimeout(() => setSubmitStatus("idle"), 2000);
     } catch (leadError) {
       setError(leadError instanceof Error ? leadError.message : "Unable to submit lead.");
@@ -88,7 +91,7 @@ export const ResultComposer = ({
         <div>
           <p className="eyebrow">Step 3</p>
           <h2>Copy-ready result</h2>
-          <p>Let customers copy a tidy message and paste it into Messenger, email, or your website contact form.</p>
+          <p>Copy the summary if you want, or submit the protected lead directly so the contractor can review it later.</p>
         </div>
       </div>
 
@@ -124,13 +127,14 @@ export const ResultComposer = ({
       </div>
 
       <textarea className="result-area" value={message} readOnly />
+      <TurnstileWidget onTokenChange={setTurnstileToken} />
 
       <div className="action-row stretch">
         <button type="button" className="primary" onClick={() => void copyMessage()}>
           {copyLabel}
         </button>
         <button type="button" onClick={() => void submitLead()} disabled={submitStatus === "saving"}>
-          {submitStatus === "saving" ? "Saving lead..." : submitStatus === "saved" ? "Lead saved" : "Submit lead"}
+          {submitStatus === "saving" ? "Saving lead..." : submitStatus === "saved" ? "Lead saved" : "Submit protected lead"}
         </button>
         <a href={`mailto:${contractor.contact.email}?subject=Fence%20estimate%20request&body=${encodeURIComponent(message)}`}>
           Email contractor

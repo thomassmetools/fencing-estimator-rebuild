@@ -165,7 +165,8 @@ h2 {
 .card-links,
 .admin-hero-links,
 .action-row,
-.segmented-control {
+.segmented-control,
+.map-search-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -286,6 +287,20 @@ a.primary,
   border: 1px solid var(--line);
 }
 
+.search-result-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.search-result-item {
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
 .contact-form-grid,
 .lead-meta-grid {
   display: grid;
@@ -358,6 +373,10 @@ select {
   resize: vertical;
 }
 
+.turnstile-frame {
+  min-height: 66px;
+}
+
 .helper-text {
   color: var(--ink-soft);
   margin-bottom: 0;
@@ -382,6 +401,19 @@ select {
   border-radius: 18px;
   padding: 16px;
   background: rgba(255, 255, 255, 0.72);
+}
+
+.lead-map-frame {
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  min-height: 220px;
+  margin-top: 12px;
+}
+
+.lead-map {
+  min-height: 220px;
+  height: 100%;
 }
 
 .lead-card-header {

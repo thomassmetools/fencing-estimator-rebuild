@@ -52,11 +52,15 @@ create table if not exists public.lead_events (
   measurement_mode text check (measurement_mode in ('distance', 'area')),
   measurement_value numeric(12,2),
   measurement_unit text,
+  measurement_points jsonb not null default '[]'::jsonb,
   estimated_total numeric(12,2),
   selected_products_summary text[] not null default '{}',
   source text not null check (source in ('copy', 'submit')),
   created_at timestamptz not null default now()
 );
+
+alter table public.lead_events
+add column if not exists measurement_points jsonb not null default '[]'::jsonb;
 
 create or replace function public.touch_updated_at()
 returns trigger

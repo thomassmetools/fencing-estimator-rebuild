@@ -9,6 +9,8 @@ A multi-tenant fencing estimator scaffold designed to be hosted once, shared fro
 - Protected admin route per contractor at `/admin/:slug`
 - Supabase-backed contractor settings and product persistence
 - Lead capture stored in Supabase and visible in admin
+- Mapbox address search and optional satellite view
+- Turnstile-protected lead submission through a Supabase Edge Function
 - Leaflet map measurement flow for distance and area
 - Product selector with rough material subtotals
 - Copy-to-clipboard enquiry box for Messenger, email, or website forms
@@ -21,7 +23,8 @@ A multi-tenant fencing estimator scaffold designed to be hosted once, shared fro
 3. Create at least one auth user in Supabase Authentication.
 4. Insert a matching row into `contractor_users` linking that auth user to a contractor.
 5. Copy `.env.example` to `.env.local` and fill in your Supabase URL and anon key.
-6. Start the app:
+6. Add your Mapbox public token and Cloudflare Turnstile site key to `.env.local`.
+7. Start the app:
 
 ```bash
 npm install
@@ -29,6 +32,11 @@ npm run dev
 ```
 
 If Supabase env vars are missing, the public pages fall back to seed data, but admin login stays disabled until the backend is configured.
+
+For the new map and anti-bot features:
+
+- `VITE_MAPBOX_ACCESS_TOKEN` enables address search and satellite view
+- `VITE_TURNSTILE_SITE_KEY` enables the Turnstile widget on lead submission
 
 ## Deployment on Cloudflare Pages
 
@@ -40,6 +48,8 @@ If Supabase env vars are missing, the public pages fall back to seed data, but a
 4. Add environment variables in Cloudflare Pages:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_MAPBOX_ACCESS_TOKEN`
+   - `VITE_TURNSTILE_SITE_KEY`
 5. Deploy.
 
 The [public/_redirects](C:\Users\Thomas Howie\JS\fencing-estimator-rebuild\public\_redirects) file ensures direct visits to routes like `/tasman-fencing` and `/admin/tasman-fencing` resolve correctly in a static Pages deployment.
@@ -60,6 +70,7 @@ The schema file also includes:
 - seeded sample contractors and products
 - row-level security policies for public reads and contractor-only admin access
 - update timestamp triggers
+- stored lead geometry for replaying customer pins later
 
 ## App structure
 
@@ -107,12 +118,33 @@ where c.slug = 'boundaryline-rural';
 
 ## Lead capture flow
 
-The public estimator now records two kinds of lead activity:
+The public estimator now records submitted leads through a protected edge function. Each lead stores:
 
-- `copy`: customer copied the result text
-- `submit`: customer used the explicit submit lead button
+- measurement totals
+- the actual clicked map points
+- selected products
+- customer contact details
 
 Admin users can review the most recent captured leads from the contractor admin screen.
+
+## Edge Function Setup
+
+Deploy the Supabase Edge Function used for protected lead submission:
+
+```bash
+supabase functions deploy submit-lead
+```
+
+Then set the Turnstile secret in Supabase:
+
+```bash
+supabase secrets set TURNSTILE_SECRET_KEY=your-turnstile-secret
+```
+
+The edge function also needs your standard Supabase function environment:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Recommended next product step
 
