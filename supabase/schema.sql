@@ -42,6 +42,37 @@ create table if not exists public.contractor_users (
   unique (contractor_id, auth_user_id)
 );
 
+create table if not exists public.subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  contractor_id uuid not null references public.contractors(id) on delete cascade,
+  customer_email text not null,
+  customer_name text not null default '',
+  plan_code text not null default 'starter-monthly',
+  status text not null default 'pending',
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  stripe_checkout_session_id text unique,
+  current_period_end timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.subscriptions
+add column if not exists current_period_end timestamptz;
+
+create unique index if not exists subscriptions_stripe_subscription_id_key
+on public.subscriptions (stripe_subscription_id)
+where stripe_subscription_id is not null;
+
+create table if not exists public.onboarding_progress (
+  contractor_id uuid primary key references public.contractors(id) on delete cascade,
+  current_step text not null default 'business-details',
+  is_live boolean not null default false,
+  completed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.lead_events (
   id uuid primary key default gen_random_uuid(),
   contractor_id uuid not null references public.contractors(id) on delete cascade,
@@ -84,10 +115,24 @@ before update on public.products
 for each row
 execute function public.touch_updated_at();
 
+drop trigger if exists subscriptions_touch_updated_at on public.subscriptions;
+create trigger subscriptions_touch_updated_at
+before update on public.subscriptions
+for each row
+execute function public.touch_updated_at();
+
+drop trigger if exists onboarding_progress_touch_updated_at on public.onboarding_progress;
+create trigger onboarding_progress_touch_updated_at
+before update on public.onboarding_progress
+for each row
+execute function public.touch_updated_at();
+
 alter table public.contractors enable row level security;
 alter table public.products enable row level security;
 alter table public.contractor_users enable row level security;
 alter table public.lead_events enable row level security;
+alter table public.subscriptions enable row level security;
+alter table public.onboarding_progress enable row level security;
 
 drop policy if exists "Public can read published contractors" on public.contractors;
 create policy "Public can read published contractors"
@@ -212,6 +257,55 @@ using (
   )
 );
 
+drop policy if exists "Members can read their subscriptions" on public.subscriptions;
+create policy "Members can read their subscriptions"
+on public.subscriptions
+for select
+using (
+  exists (
+    select 1
+    from public.contractor_users cu
+    where cu.contractor_id = subscriptions.contractor_id
+      and cu.auth_user_id = auth.uid()
+  )
+);
+
+drop policy if exists "Members can read onboarding progress" on public.onboarding_progress;
+create policy "Members can read onboarding progress"
+on public.onboarding_progress
+for select
+using (
+  exists (
+    select 1
+    from public.contractor_users cu
+    where cu.contractor_id = onboarding_progress.contractor_id
+      and cu.auth_user_id = auth.uid()
+  )
+);
+
+drop policy if exists "Admins can update onboarding progress" on public.onboarding_progress;
+create policy "Admins can update onboarding progress"
+on public.onboarding_progress
+for update
+using (
+  exists (
+    select 1
+    from public.contractor_users cu
+    where cu.contractor_id = onboarding_progress.contractor_id
+      and cu.auth_user_id = auth.uid()
+      and cu.role = 'admin'
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.contractor_users cu
+    where cu.contractor_id = onboarding_progress.contractor_id
+      and cu.auth_user_id = auth.uid()
+      and cu.role = 'admin'
+  )
+);
+
 insert into public.contractors (
   slug,
   business_name,
@@ -294,3 +388,12 @@ where not exists (
   where existing.contractor_id = c.id
     and existing.name = p.name
 );
+
+insert into public.onboarding_progress (contractor_id, current_step, is_live)
+select c.id, 'complete', true
+from public.contractors c
+where c.slug in ('tasman-fencing', 'boundaryline-rural')
+on conflict (contractor_id) do update set
+  current_step = excluded.current_step,
+  is_live = excluded.is_live,
+  completed_at = coalesce(public.onboarding_progress.completed_at, now());

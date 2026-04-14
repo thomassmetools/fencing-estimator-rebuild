@@ -1,6 +1,14 @@
 import { seedContractors } from "../data/seed";
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
-import type { ContractorRecord, LeadRecord, MeasurementResult, Product } from "../types";
+import type {
+  ContractorRecord,
+  LeadRecord,
+  MeasurementResult,
+  OnboardingContext,
+  OnboardingProgressRecord,
+  Product,
+  SubscriptionRecord,
+} from "../types";
 
 type ContractorRow = {
   id: string;
@@ -48,6 +56,29 @@ type LeadRow = {
   created_at: string;
 };
 
+type SubscriptionRow = {
+  id: string;
+  contractor_id: string;
+  customer_email: string;
+  customer_name: string;
+  plan_code: string;
+  status: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  stripe_checkout_session_id: string | null;
+  current_period_end: string | null;
+  created_at: string;
+};
+
+type OnboardingRow = {
+  contractor_id: string;
+  current_step: string;
+  is_live: boolean;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 const contractorColumns = `
   id,
   slug,
@@ -92,6 +123,15 @@ const leadColumns = `
   selected_products_summary,
   source,
   created_at
+`;
+
+const onboardingColumns = `
+  contractor_id,
+  current_step,
+  is_live,
+  completed_at,
+  created_at,
+  updated_at
 `;
 
 const mapContractor = (row: ContractorRow, products: ProductRow[]): ContractorRecord => {
@@ -154,6 +194,29 @@ const mapLead = (row: LeadRow): LeadRecord => ({
   selectedProductsSummary: row.selected_products_summary ?? [],
   source: row.source,
   createdAt: row.created_at,
+});
+
+const mapSubscription = (row: SubscriptionRow): SubscriptionRecord => ({
+  id: row.id,
+  contractorId: row.contractor_id,
+  customerEmail: row.customer_email,
+  customerName: row.customer_name,
+  planCode: row.plan_code,
+  status: row.status,
+  stripeCustomerId: row.stripe_customer_id,
+  stripeSubscriptionId: row.stripe_subscription_id,
+  stripeCheckoutSessionId: row.stripe_checkout_session_id,
+  currentPeriodEnd: row.current_period_end,
+  createdAt: row.created_at,
+});
+
+const mapOnboarding = (row: OnboardingRow): OnboardingProgressRecord => ({
+  contractorId: row.contractor_id,
+  currentStep: row.current_step,
+  isLive: row.is_live,
+  completedAt: row.completed_at,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
 });
 
 const fetchProductsForContractors = async (contractorIds: string[]) => {
@@ -387,4 +450,92 @@ export const fetchLeadEvents = async (contractorId: string): Promise<LeadRecord[
   }
 
   return ((data ?? []) as LeadRow[]).map(mapLead);
+};
+
+export const claimOnboardingContext = async (): Promise<OnboardingContext | null> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { data, error } = await supabase.functions.invoke("claim-onboarding");
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    contractor: {
+      id: data.contractor.id,
+      slug: data.contractor.slug,
+      branding: {
+        primaryColor: data.contractor.primary_color,
+        accentColor: data.contractor.accent_color,
+        heroLabel: data.contractor.hero_label,
+        introText: data.contractor.intro_text,
+      },
+      contact: {
+        businessName: data.contractor.business_name,
+        phone: data.contractor.phone,
+        email: data.contractor.email,
+        website: data.contractor.website,
+        facebookUrl: data.contractor.facebook_url,
+      },
+      resultTemplate: {
+        openingLine: data.contractor.opening_line,
+        closingLine: data.contractor.closing_line,
+        includePricingDisclaimer: data.contractor.include_pricing_disclaimer,
+      },
+      products: (data.products ?? []).map((product: ProductRow) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        unit: product.unit,
+        basePrice: Number(product.base_price),
+        isFeatured: product.is_featured,
+      })),
+    },
+    onboarding: mapOnboarding(data.onboarding as OnboardingRow),
+    subscription: data.subscription ? mapSubscription(data.subscription as SubscriptionRow) : null,
+  };
+};
+
+export const updateOnboardingProgress = async ({
+  contractorId,
+  currentStep,
+  isLive,
+  complete,
+}: {
+  contractorId: string;
+  currentStep: string;
+  isLive: boolean;
+  complete?: boolean;
+}) => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const payload = {
+    current_step: currentStep,
+    is_live: isLive,
+    completed_at: complete ? new Date().toISOString() : null,
+  };
+
+  const { data, error } = await supabase
+    .from("onboarding_progress")
+    .update(payload)
+    .eq("contractor_id", contractorId)
+    .select(onboardingColumns)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapOnboarding(data as OnboardingRow);
 };

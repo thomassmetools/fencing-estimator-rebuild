@@ -4,12 +4,14 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 export const LoginPage = () => {
-  const { isConfigured, isLoading, session, signIn } = useAuth();
+  const { isConfigured, isLoading, session, sendMagicLink, signIn } = useAuth();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [linkMessage, setLinkMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingLink, setIsSendingLink] = useState(false);
 
   const next = searchParams.get("next") || "/admin";
 
@@ -20,6 +22,7 @@ export const LoginPage = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setLinkMessage(null);
     setIsSubmitting(true);
 
     try {
@@ -28,6 +31,26 @@ export const LoginPage = () => {
       setError(signInError instanceof Error ? signInError.message : "Unable to sign in.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleMagicLink = async () => {
+    if (!email) {
+      setError("Enter the payment email or admin email first.");
+      return;
+    }
+
+    setError(null);
+    setLinkMessage(null);
+    setIsSendingLink(true);
+
+    try {
+      await sendMagicLink(email, next);
+      setLinkMessage("Setup link sent. Open the email inbox tied to this contractor account.");
+    } catch (magicLinkError) {
+      setError(magicLinkError instanceof Error ? magicLinkError.message : "Unable to send setup link.");
+    } finally {
+      setIsSendingLink(false);
     }
   };
 
@@ -47,7 +70,7 @@ export const LoginPage = () => {
       <section className="auth-card">
         <p className="eyebrow">Contractor sign in</p>
         <h1>Admin access</h1>
-        <p>Use the Supabase user account linked to your contractor profile.</p>
+        <p>Use the Supabase user account linked to your contractor profile, or send a setup link to the payment email.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="field-stack">
@@ -59,8 +82,12 @@ export const LoginPage = () => {
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </label>
           {error ? <p className="error-text">{error}</p> : null}
+          {linkMessage ? <p className="success-text">{linkMessage}</p> : null}
           <button type="submit" className="primary" disabled={isSubmitting || isLoading}>
             {isSubmitting || isLoading ? "Signing in..." : "Sign in"}
+          </button>
+          <button type="button" onClick={() => void handleMagicLink()} disabled={isSendingLink || isLoading}>
+            {isSendingLink ? "Sending setup link..." : "Email me a setup link"}
           </button>
         </form>
       </section>

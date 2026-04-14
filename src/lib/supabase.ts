@@ -9,6 +9,22 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 let client: SupabaseClient | null = null;
 
+export const getSiteUrl = (path = "") => {
+  const configuredBaseUrl = import.meta.env.VITE_SITE_URL?.replace(/\/$/, "");
+
+  if (configuredBaseUrl) {
+    return path ? `${configuredBaseUrl}${path.startsWith("/") ? path : `/${path}`}` : configuredBaseUrl;
+  }
+
+  if (typeof window !== "undefined") {
+    return path
+      ? `${window.location.origin}${path.startsWith("/") ? path : `/${path}`}`
+      : window.location.origin;
+  }
+
+  return path || "";
+};
+
 export const getSupabaseClient = () => {
   if (!isSupabaseConfigured) {
     return null;

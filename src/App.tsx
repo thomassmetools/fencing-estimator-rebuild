@@ -4,6 +4,8 @@ import { useContractorStore } from "./hooks/useContractorStore";
 
 const HomePage = lazy(() => import("./pages/HomePage").then((module) => ({ default: module.HomePage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then((module) => ({ default: module.LoginPage })));
+const WelcomePage = lazy(() => import("./pages/WelcomePage").then((module) => ({ default: module.WelcomePage })));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage").then((module) => ({ default: module.OnboardingPage })));
 const AdminPage = lazy(() => import("./pages/AdminPage").then((module) => ({ default: module.AdminPage })));
 const EstimatorPage = lazy(() => import("./pages/EstimatorPage").then((module) => ({ default: module.EstimatorPage })));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then((module) => ({ default: module.NotFoundPage })));
@@ -50,6 +52,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage contractors={contractors} />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/welcome" element={<WelcomePage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
         <Route
           path="/admin"
           element={contractors[0] ? <Navigate to={`/admin/${contractors[0].slug}`} replace /> : <NotFoundPage />}

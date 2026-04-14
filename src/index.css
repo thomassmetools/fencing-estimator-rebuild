@@ -177,7 +177,8 @@ h2 {
 .admin-hero-links button,
 .action-row a,
 .action-row button,
-.segmented-control button {
+.segmented-control button,
+.button-link {
   text-decoration: none;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -194,7 +195,8 @@ h2 {
 button.primary,
 a.primary,
 .segmented-control .active,
-.action-row .primary {
+.action-row .primary,
+.button-link.primary {
   background: var(--brand-primary);
   color: #fff7e9;
   border-color: var(--brand-primary);

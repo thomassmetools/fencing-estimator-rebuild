@@ -73,3 +73,32 @@ export interface LeadRecord {
   source: "copy" | "submit";
   createdAt: string;
 }
+
+export interface SubscriptionRecord {
+  id: string;
+  contractorId: string;
+  customerEmail: string;
+  customerName: string;
+  planCode: string;
+  status: string;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  stripeCheckoutSessionId: string | null;
+  currentPeriodEnd: string | null;
+  createdAt: string;
+}
+
+export interface OnboardingProgressRecord {
+  contractorId: string;
+  currentStep: string;
+  isLive: boolean;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OnboardingContext {
+  contractor: ContractorRecord;
+  onboarding: OnboardingProgressRecord;
+  subscription: SubscriptionRecord | null;
+}

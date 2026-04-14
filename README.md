@@ -12,6 +12,8 @@ A multi-tenant fencing estimator scaffold designed to be hosted once, shared fro
 - Mapbox address search and optional satellite view
 - Turnstile-protected lead submission through a Supabase Edge Function
 - Leaflet map measurement flow for distance and area
+- Welcome and onboarding routes for paid customers
+- Subscription and onboarding progress tables for automated provisioning
 - Product selector with rough material subtotals
 - Copy-to-clipboard enquiry box for Messenger, email, or website forms
 - Cloudflare Pages SPA routing support
@@ -24,7 +26,8 @@ A multi-tenant fencing estimator scaffold designed to be hosted once, shared fro
 4. Insert a matching row into `contractor_users` linking that auth user to a contractor.
 5. Copy `.env.example` to `.env.local` and fill in your Supabase URL and anon key.
 6. Add your Mapbox public token and Cloudflare Turnstile site key to `.env.local`.
-7. Start the app:
+7. Add `VITE_SITE_URL` if you want setup-link emails to always redirect to your production app domain.
+8. Start the app:
 
 ```bash
 npm install
@@ -37,6 +40,7 @@ For the new map and anti-bot features:
 
 - `VITE_MAPBOX_ACCESS_TOKEN` enables address search and satellite view
 - `VITE_TURNSTILE_SITE_KEY` enables the Turnstile widget on lead submission
+- `VITE_SITE_URL` sets the public app base URL for emailed setup links
 
 ## Deployment on Cloudflare Pages
 
@@ -48,6 +52,7 @@ For the new map and anti-bot features:
 4. Add environment variables in Cloudflare Pages:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_SITE_URL`
    - `VITE_MAPBOX_ACCESS_TOKEN`
    - `VITE_TURNSTILE_SITE_KEY`
 5. Deploy.
@@ -64,6 +69,8 @@ Core tables:
 - `products`
 - `contractor_users`
 - `lead_events`
+- `subscriptions`
+- `onboarding_progress`
 
 The schema file also includes:
 
@@ -135,16 +142,67 @@ Deploy the Supabase Edge Function used for protected lead submission:
 supabase functions deploy submit-lead
 ```
 
+Deploy the onboarding claim function too:
+
+```bash
+supabase functions deploy claim-onboarding
+```
+
+Deploy the Stripe provisioning webhook:
+
+```bash
+supabase functions deploy stripe-provision
+```
+
 Then set the Turnstile secret in Supabase:
 
 ```bash
 supabase secrets set TURNSTILE_SECRET_KEY=your-turnstile-secret
 ```
 
+Set the Stripe secrets and app URL in Supabase too:
+
+```bash
+supabase secrets set STRIPE_SECRET_KEY=your-stripe-secret
+supabase secrets set STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
+supabase secrets set PUBLIC_SITE_URL=https://app.tradiestools.co.nz
+```
+
 The edge function also needs your standard Supabase function environment:
 
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
+
+## Payment-to-Onboarding Path
+
+Recommended first-pass automated flow:
+
+1. Stripe payment link is used
+2. Stripe webhook (`stripe-provision`) creates:
+   - `contractors` row
+   - `subscriptions` row
+   - `onboarding_progress` row
+   - starter products
+3. Supabase invite email is sent to the payment email
+4. Customer signs in
+5. `/welcome` sends them to `/onboarding`
+6. `claim-onboarding` links the auth user to the contractor by email match
+7. Customer fills business details and product setup
+8. Customer saves and goes live
+
+This repo now includes the app-side and database-side foundation for the whole first-pass flow, including the Stripe webhook endpoint.
+
+## What still needs wiring in Stripe/Supabase dashboards
+
+- Create the Stripe payment link with `mode=subscription`
+- Add checkout metadata:
+  - `plan_code`
+  - `template_code`
+- Point Stripe webhooks at your deployed `stripe-provision` function
+- Enable Supabase email auth and set your site URL / redirect URLs to include:
+  - `http://localhost:5173/welcome`
+  - `https://app.tradiestools.co.nz/welcome`
+- Optionally customize the Supabase invite email copy so it feels branded
 
 ## Recommended next product step
 
@@ -153,3 +211,17 @@ After this, the strongest next move is outbound notifications:
 - email the contractor automatically when a lead is submitted
 - optionally send the lead into a CRM or job tracking system
 - add a status field so staff can mark leads as quoted, won, or lost
+
+## Stripe payment link recommendation
+
+For your first sellable version, create one Stripe payment link for each offer and include metadata so the webhook can provision the right starter setup:
+
+- `plan_code=starter-monthly`
+- `template_code=residential`
+
+You can later make separate links for:
+
+- `template_code=rural`
+- `template_code=pool`
+
+That keeps checkout simple while still letting the webhook choose a sensible starter product set automatically.

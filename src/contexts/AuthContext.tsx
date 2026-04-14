@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type PropsWithChildren } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AuthContext, type AuthContextValue } from "./auth-context";
-import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabase";
+import { getSiteUrl, getSupabaseClient, isSupabaseConfigured } from "../lib/supabase";
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -52,6 +52,24 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         }
 
         const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          throw error;
+        }
+      },
+      sendMagicLink: async (email: string, nextPath = "/welcome") => {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          throw new Error("Supabase is not configured.");
+        }
+
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+            emailRedirectTo: getSiteUrl(nextPath),
+          },
+        });
+
         if (error) {
           throw error;
         }
