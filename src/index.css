@@ -202,6 +202,28 @@ a.primary,
   border-color: var(--brand-primary);
 }
 
+.success-card {
+  max-width: 760px;
+}
+
+.success-checklist {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.success-checklist div {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(29, 79, 65, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.success-checklist p {
+  margin: 0.45rem 0 0;
+  color: #4f5e57;
+}
+
 .brand-banner {
   position: relative;
   overflow: hidden;

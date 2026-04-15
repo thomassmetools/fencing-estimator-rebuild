@@ -4,6 +4,9 @@ import { useContractorStore } from "./hooks/useContractorStore";
 
 const HomePage = lazy(() => import("./pages/HomePage").then((module) => ({ default: module.HomePage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then((module) => ({ default: module.LoginPage })));
+const CheckoutSuccessPage = lazy(() =>
+  import("./pages/CheckoutSuccessPage").then((module) => ({ default: module.CheckoutSuccessPage })),
+);
 const WelcomePage = lazy(() => import("./pages/WelcomePage").then((module) => ({ default: module.WelcomePage })));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage").then((module) => ({ default: module.OnboardingPage })));
 const AdminPage = lazy(() => import("./pages/AdminPage").then((module) => ({ default: module.AdminPage })));
@@ -52,6 +55,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage contractors={contractors} />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route

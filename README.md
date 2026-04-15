@@ -168,6 +168,15 @@ supabase secrets set STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
 supabase secrets set PUBLIC_SITE_URL=https://app.tradiestools.co.nz
 ```
 
+Optional lead-notification email secrets:
+
+```bash
+supabase secrets set RESEND_API_KEY=your-resend-api-key
+supabase secrets set RESEND_FROM_EMAIL=leads@tradiestools.co.nz
+```
+
+If those are set, every protected lead submission will also send a plain-text notification email to the contractor email saved on their account.
+
 The edge function also needs your standard Supabase function environment:
 
 - `SUPABASE_URL`
@@ -189,6 +198,16 @@ Recommended first-pass automated flow:
 6. `claim-onboarding` links the auth user to the contractor by email match
 7. Customer fills business details and product setup
 8. Customer saves and goes live
+
+## Stripe checkout success page
+
+Point your Stripe payment link or Checkout success URL to:
+
+```text
+https://app.tradiestools.co.nz/checkout/success
+```
+
+That page now gives the buyer a clean “check your email and finish setup” handoff, plus a path back to the login screen if they need a fresh setup link.
 
 This repo now includes the app-side and database-side foundation for the whole first-pass flow, including the Stripe webhook endpoint.
 

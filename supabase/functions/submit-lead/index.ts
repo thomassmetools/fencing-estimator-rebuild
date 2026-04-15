@@ -8,6 +8,9 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const turnstileSecretKey = Deno.env.get("TURNSTILE_SECRET_KEY") ?? "";
+const resendApiKey = Deno.env.get("RESEND_API_KEY") ?? "";
+const resendFromEmail = Deno.env.get("RESEND_FROM_EMAIL") ?? "";
+const publicSiteUrl = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://app.tradiestools.co.nz").replace(/\/$/, "");
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
@@ -26,6 +29,79 @@ interface LeadPayload {
   source: "submit";
   turnstile_token: string;
 }
+
+const sendLeadNotification = async ({
+  businessName,
+  contractorSlug,
+  contractorEmail,
+  customerName,
+  customerEmail,
+  customerPhone,
+  message,
+  measurementMode,
+  measurementValue,
+  measurementUnit,
+  selectedProductsSummary,
+  estimatedTotal,
+}: {
+  businessName: string;
+  contractorSlug: string;
+  contractorEmail: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  message: string;
+  measurementMode: "distance" | "area" | null;
+  measurementValue: number | null;
+  measurementUnit: string | null;
+  selectedProductsSummary: string[];
+  estimatedTotal: number | null;
+}) => {
+  if (!resendApiKey || !resendFromEmail || !contractorEmail) {
+    return;
+  }
+
+  const measurementSummary =
+    measurementMode && measurementValue && measurementUnit
+      ? `${measurementMode}: ${measurementValue.toFixed(1)} ${measurementUnit}`
+      : "No measurement saved";
+
+  const lines = [
+    `New estimator lead for ${businessName}`,
+    "",
+    `Customer: ${customerName || "Not provided"}`,
+    `Email: ${customerEmail || "Not provided"}`,
+    `Phone: ${customerPhone || "Not provided"}`,
+    `Measurement: ${measurementSummary}`,
+    `Estimated material total: ${estimatedTotal ? `$${estimatedTotal.toFixed(2)}` : "Not calculated"}`,
+    `Products: ${selectedProductsSummary.length > 0 ? selectedProductsSummary.join(" | ") : "None selected"}`,
+    "",
+    "Customer message:",
+    message,
+    "",
+    `Open admin: ${publicSiteUrl}/admin/${contractorSlug}`,
+  ];
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: resendFromEmail,
+      to: [contractorEmail],
+      reply_to: customerEmail || undefined,
+      subject: `New estimator lead for ${businessName}`,
+      text: lines.join("\n"),
+    }),
+  });
+
+  if (!response.ok) {
+    const responseText = await response.text();
+    throw new Error(`Lead email notification failed: ${response.status} ${responseText}`);
+  }
+};
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -80,7 +156,7 @@ Deno.serve(async (request) => {
 
     const { data: contractor, error: contractorError } = await supabase
       .from("contractors")
-      .select("id, is_published")
+      .select("id, is_published, business_name, email, slug")
       .eq("id", body.contractor_id)
       .eq("is_published", true)
       .single();
@@ -147,6 +223,25 @@ Deno.serve(async (request) => {
 
     if (error) {
       throw error;
+    }
+
+    try {
+      await sendLeadNotification({
+        businessName: String(contractor.business_name ?? "Contractor"),
+        contractorSlug: String(contractor.slug ?? ""),
+        contractorEmail: String(contractor.email ?? ""),
+        customerName: body.customer_name ?? "",
+        customerEmail: body.customer_email ?? "",
+        customerPhone: body.customer_phone ?? "",
+        message: body.message,
+        measurementMode: body.measurement_mode,
+        measurementValue: body.measurement_value,
+        measurementUnit: body.measurement_unit,
+        selectedProductsSummary: body.selected_products_summary ?? [],
+        estimatedTotal: body.estimated_total,
+      });
+    } catch (notificationError) {
+      console.error(notificationError);
     }
 
     return new Response(JSON.stringify(data), {
