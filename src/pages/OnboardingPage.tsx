@@ -18,6 +18,11 @@ const defaultProduct = (): Product => ({
   basePrice: 100,
 });
 
+const normaliseColorValue = (value: string, fallback: string) => {
+  const trimmed = value.trim();
+  return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed : fallback;
+};
+
 export const OnboardingPage = () => {
   const { session, isLoading } = useAuth();
   const [context, setContext] = useState<OnboardingContext | null>(null);
@@ -108,6 +113,37 @@ export const OnboardingPage = () => {
 
   const updateBranding = (key: keyof ContractorRecord["branding"], value: string) => {
     setDraft((current) => (current ? { ...current, branding: { ...current.branding, [key]: value } } : current));
+  };
+
+  const renderColorField = (
+    label: string,
+    key: keyof ContractorRecord["branding"],
+    fallback: string,
+  ) => {
+    const value = normaliseColorValue(draft.branding[key] as string, fallback);
+
+    return (
+      <label className="field-stack" key={key}>
+        <span>{label}</span>
+        <div className="color-field">
+          <input
+            className="color-wheel"
+            type="color"
+            value={value}
+            onChange={(event) => updateBranding(key, event.target.value)}
+            aria-label={`${label} picker`}
+          />
+          <input
+            type="text"
+            value={draft.branding[key] as string}
+            onChange={(event) => updateBranding(key, event.target.value)}
+            placeholder={fallback}
+            spellCheck={false}
+          />
+          <span className="color-swatch" style={{ backgroundColor: value }} aria-hidden="true" />
+        </div>
+      </label>
+    );
   };
 
   const updateTemplate = (key: keyof ContractorRecord["resultTemplate"], value: string | boolean) => {
@@ -227,14 +263,8 @@ export const OnboardingPage = () => {
               <span>Intro text</span>
               <textarea rows={3} value={draft.branding.introText} onChange={(event) => updateBranding("introText", event.target.value)} />
             </label>
-            <label className="field-stack">
-              <span>Primary color</span>
-              <input value={draft.branding.primaryColor} onChange={(event) => updateBranding("primaryColor", event.target.value)} />
-            </label>
-            <label className="field-stack">
-              <span>Accent color</span>
-              <input value={draft.branding.accentColor} onChange={(event) => updateBranding("accentColor", event.target.value)} />
-            </label>
+            {renderColorField("Primary color", "primaryColor", "#1d4f41")}
+            {renderColorField("Accent color", "accentColor", "#d8a64f")}
             <label className="field-stack full-span">
               <span>Opening line</span>
               <textarea rows={2} value={draft.resultTemplate.openingLine} onChange={(event) => updateTemplate("openingLine", event.target.value)} />
