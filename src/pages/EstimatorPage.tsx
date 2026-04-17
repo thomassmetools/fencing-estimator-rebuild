@@ -42,13 +42,17 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
     );
   }
 
+  const primaryColor = contractor.branding.primaryColor || "#1d4f41";
+  const accentColor = contractor.branding.accentColor || "#d8a64f";
+  const hasFacebookUrl = contractor.contact.facebookUrl.trim().length > 0;
+
   return (
     <main
       className="page-shell estimator-shell"
       style={
         {
-          ["--brand-primary" as string]: contractor.branding.primaryColor,
-          ["--brand-accent" as string]: contractor.branding.accentColor,
+          ["--brand-primary" as string]: primaryColor,
+          ["--brand-accent" as string]: accentColor,
         } as CSSProperties
       }
     >
@@ -59,11 +63,13 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
           <p>{contractor.branding.introText}</p>
         </div>
         <div className="contact-panel">
-          <span>{contractor.contact.phone}</span>
-          <span>{contractor.contact.email}</span>
-          <a href={contractor.contact.facebookUrl} target="_blank" rel="noreferrer">
-            Facebook page
-          </a>
+          {contractor.contact.phone ? <span>{contractor.contact.phone}</span> : null}
+          {contractor.contact.email ? <span>{contractor.contact.email}</span> : null}
+          {hasFacebookUrl ? (
+            <a href={contractor.contact.facebookUrl} target="_blank" rel="noreferrer">
+              Facebook page
+            </a>
+          ) : null}
         </div>
       </section>
 

@@ -333,6 +333,19 @@ export const updateContractorSettings = async (contractor: ContractorRecord) => 
   }
 };
 
+export const setContractorPublished = async (contractorId: string, isPublished: boolean) => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { error } = await supabase.from("contractors").update({ is_published: isPublished }).eq("id", contractorId);
+
+  if (error) {
+    throw error;
+  }
+};
+
 export const replaceProducts = async (contractorId: string, products: Product[]) => {
   const supabase = getSupabaseClient();
   if (!supabase) {
@@ -407,6 +420,9 @@ export const submitLeadEvent = async ({
     throw new Error("Supabase is not configured.");
   }
 
+  const functionsUrl = `${getSupabaseUrl()}/functions/v1/submit-lead`;
+  const anonKey = getSupabaseAnonKey();
+
   const payload = {
     contractor_id: contractorId,
     customer_name: customerName,
@@ -423,15 +439,28 @@ export const submitLeadEvent = async ({
     turnstile_token: turnstileToken,
   };
 
-  const { data, error } = await supabase.functions.invoke("submit-lead", {
-    body: payload,
+  const response = await fetch(functionsUrl, {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
   });
 
-  if (error) {
-    throw error;
+  const responseBody = await response
+    .json()
+    .catch(async () => ({ error: (await response.text()) || "Unable to read lead submission response." }));
+
+  if (!response.ok) {
+    const detailedMessage =
+      typeof responseBody?.error === "string" && responseBody.error.length > 0
+        ? responseBody.error
+        : `Lead submission failed with status ${response.status}.`;
+    throw new Error(detailedMessage);
   }
 
-  return mapLead(data as LeadRow);
+  return mapLead(responseBody as LeadRow);
 };
 
 export const fetchLeadEvents = async (contractorId: string): Promise<LeadRecord[]> => {

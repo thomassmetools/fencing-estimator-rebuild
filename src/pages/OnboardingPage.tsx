@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { claimOnboardingContext, replaceProducts, updateContractorSettings, updateOnboardingProgress } from "../lib/repository";
+import {
+  claimOnboardingContext,
+  replaceProducts,
+  setContractorPublished,
+  updateContractorSettings,
+  updateOnboardingProgress,
+} from "../lib/repository";
 import type { ContractorRecord, OnboardingContext, Product } from "../types";
 
 const defaultProduct = (): Product => ({
@@ -143,6 +149,9 @@ export const OnboardingPage = () => {
     try {
       await updateContractorSettings(draft);
       await replaceProducts(draft.id, draft.products);
+      if (publish) {
+        await setContractorPublished(draft.id, true);
+      }
       const onboarding = await updateOnboardingProgress({
         contractorId: draft.id,
         currentStep: publish ? "complete" : "products",
