@@ -516,7 +516,20 @@ export const claimOnboardingContext = async (): Promise<OnboardingContext | null
         };
       }
 
-      lastError = error;
+      let detailedMessage = error.message;
+      try {
+        const response = error.context as Response | undefined;
+        if (response) {
+          const responseBody = await response.clone().json().catch(async () => ({ error: await response.text() }));
+          if (typeof responseBody?.error === "string" && responseBody.error.length > 0) {
+            detailedMessage = responseBody.error;
+          }
+        }
+      } catch {
+        // Keep the default edge-function error message when the response body is unavailable.
+      }
+
+      lastError = new Error(detailedMessage);
     }
 
     if (attempt < 2) {
