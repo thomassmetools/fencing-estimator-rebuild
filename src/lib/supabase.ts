@@ -8,6 +8,7 @@ const supabaseAnonKey =
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 export const getSupabaseUrl = () => supabaseUrl;
+export const getSupabaseAnonKey = () => supabaseAnonKey;
 
 let client: SupabaseClient | null = null;
 

@@ -1,5 +1,5 @@
 import { seedContractors } from "../data/seed";
-import { getSupabaseClient, getSupabaseUrl, isSupabaseConfigured } from "./supabase";
+import { getSupabaseAnonKey, getSupabaseClient, getSupabaseUrl, isSupabaseConfigured } from "./supabase";
 import type {
   ContractorRecord,
   LeadRecord,
@@ -461,6 +461,7 @@ export const claimOnboardingContext = async (): Promise<OnboardingContext | null
   }
 
   const functionsUrl = `${getSupabaseUrl()}/functions/v1/claim-onboarding`;
+  const anonKey = getSupabaseAnonKey();
 
   let lastError: Error | null = null;
 
@@ -479,7 +480,7 @@ export const claimOnboardingContext = async (): Promise<OnboardingContext | null
         method: "POST",
         headers: {
           Authorization: `Bearer ${sessionData.session.access_token}`,
-          apikey: sessionData.session.access_token,
+          apikey: anonKey,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({}),
