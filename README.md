@@ -154,6 +154,8 @@ Deploy the Stripe provisioning webhook:
 supabase functions deploy stripe-provision
 ```
 
+`stripe-provision` must be deployed with JWT verification disabled because Stripe webhooks do not send a Supabase auth header. This repo now captures that in [supabase/config.toml](C:\Users\Thomas Howie\JS\fencing-estimator-rebuild\supabase\config.toml), so a normal deploy will preserve the correct setting.
+
 Then set the Turnstile secret in Supabase:
 
 ```bash
