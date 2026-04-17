@@ -2,3 +2,6 @@ project_id = "doyltymredlaenmwurbk"
 
 [functions.stripe-provision]
 verify_jwt = false
+
+[functions.claim-onboarding]
+verify_jwt = false
