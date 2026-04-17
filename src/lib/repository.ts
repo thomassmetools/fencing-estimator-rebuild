@@ -219,6 +219,8 @@ const mapOnboarding = (row: OnboardingRow): OnboardingProgressRecord => ({
   updatedAt: row.updated_at,
 });
 
+const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
 const fetchProductsForContractors = async (contractorIds: string[]) => {
   const supabase = getSupabaseClient();
   if (!supabase || contractorIds.length === 0) {
@@ -458,50 +460,71 @@ export const claimOnboardingContext = async (): Promise<OnboardingContext | null
     throw new Error("Supabase is not configured.");
   }
 
-  const { data, error } = await supabase.functions.invoke("claim-onboarding");
+  let lastError: Error | null = null;
 
-  if (error) {
-    throw error;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const {
+      data: sessionData,
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      lastError = sessionError;
+    } else if (!sessionData.session) {
+      lastError = new Error("Your login session is still being finalised. Please try again.");
+    } else {
+      const { data, error } = await supabase.functions.invoke("claim-onboarding");
+
+      if (!error) {
+        if (!data) {
+          return null;
+        }
+
+        return {
+          contractor: {
+            id: data.contractor.id,
+            slug: data.contractor.slug,
+            branding: {
+              primaryColor: data.contractor.primary_color,
+              accentColor: data.contractor.accent_color,
+              heroLabel: data.contractor.hero_label,
+              introText: data.contractor.intro_text,
+            },
+            contact: {
+              businessName: data.contractor.business_name,
+              phone: data.contractor.phone,
+              email: data.contractor.email,
+              website: data.contractor.website,
+              facebookUrl: data.contractor.facebook_url,
+            },
+            resultTemplate: {
+              openingLine: data.contractor.opening_line,
+              closingLine: data.contractor.closing_line,
+              includePricingDisclaimer: data.contractor.include_pricing_disclaimer,
+            },
+            products: (data.products ?? []).map((product: ProductRow) => ({
+              id: product.id,
+              name: product.name,
+              description: product.description,
+              unit: product.unit,
+              basePrice: Number(product.base_price),
+              isFeatured: product.is_featured,
+            })),
+          },
+          onboarding: mapOnboarding(data.onboarding as OnboardingRow),
+          subscription: data.subscription ? mapSubscription(data.subscription as SubscriptionRow) : null,
+        };
+      }
+
+      lastError = error;
+    }
+
+    if (attempt < 2) {
+      await wait(700);
+    }
   }
 
-  if (!data) {
-    return null;
-  }
-
-  return {
-    contractor: {
-      id: data.contractor.id,
-      slug: data.contractor.slug,
-      branding: {
-        primaryColor: data.contractor.primary_color,
-        accentColor: data.contractor.accent_color,
-        heroLabel: data.contractor.hero_label,
-        introText: data.contractor.intro_text,
-      },
-      contact: {
-        businessName: data.contractor.business_name,
-        phone: data.contractor.phone,
-        email: data.contractor.email,
-        website: data.contractor.website,
-        facebookUrl: data.contractor.facebook_url,
-      },
-      resultTemplate: {
-        openingLine: data.contractor.opening_line,
-        closingLine: data.contractor.closing_line,
-        includePricingDisclaimer: data.contractor.include_pricing_disclaimer,
-      },
-      products: (data.products ?? []).map((product: ProductRow) => ({
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        unit: product.unit,
-        basePrice: Number(product.base_price),
-        isFeatured: product.is_featured,
-      })),
-    },
-    onboarding: mapOnboarding(data.onboarding as OnboardingRow),
-    subscription: data.subscription ? mapSubscription(data.subscription as SubscriptionRow) : null,
-  };
+  throw lastError ?? new Error("Unable to claim onboarding.");
 };
 
 export const updateOnboardingProgress = async ({
