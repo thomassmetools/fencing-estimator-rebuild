@@ -1,5 +1,5 @@
 import { seedContractors } from "../data/seed";
-import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
+import { getSupabaseClient, getSupabaseUrl, isSupabaseConfigured } from "./supabase";
 import type {
   ContractorRecord,
   LeadRecord,
@@ -460,6 +460,8 @@ export const claimOnboardingContext = async (): Promise<OnboardingContext | null
     throw new Error("Supabase is not configured.");
   }
 
+  const functionsUrl = `${getSupabaseUrl()}/functions/v1/claim-onboarding`;
+
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -473,36 +475,48 @@ export const claimOnboardingContext = async (): Promise<OnboardingContext | null
     } else if (!sessionData.session) {
       lastError = new Error("Your login session is still being finalised. Please try again.");
     } else {
-      const { data, error } = await supabase.functions.invoke("claim-onboarding");
+      const response = await fetch(functionsUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+          apikey: sessionData.session.access_token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
 
-      if (!error) {
-        if (!data) {
+      const responseBody = await response
+        .json()
+        .catch(async () => ({ error: (await response.text()) || "Unable to read edge function response." }));
+
+      if (response.ok) {
+        if (!responseBody) {
           return null;
         }
 
         return {
           contractor: {
-            id: data.contractor.id,
-            slug: data.contractor.slug,
+            id: responseBody.contractor.id,
+            slug: responseBody.contractor.slug,
             branding: {
-              primaryColor: data.contractor.primary_color,
-              accentColor: data.contractor.accent_color,
-              heroLabel: data.contractor.hero_label,
-              introText: data.contractor.intro_text,
+              primaryColor: responseBody.contractor.primary_color,
+              accentColor: responseBody.contractor.accent_color,
+              heroLabel: responseBody.contractor.hero_label,
+              introText: responseBody.contractor.intro_text,
             },
             contact: {
-              businessName: data.contractor.business_name,
-              phone: data.contractor.phone,
-              email: data.contractor.email,
-              website: data.contractor.website,
-              facebookUrl: data.contractor.facebook_url,
+              businessName: responseBody.contractor.business_name,
+              phone: responseBody.contractor.phone,
+              email: responseBody.contractor.email,
+              website: responseBody.contractor.website,
+              facebookUrl: responseBody.contractor.facebook_url,
             },
             resultTemplate: {
-              openingLine: data.contractor.opening_line,
-              closingLine: data.contractor.closing_line,
-              includePricingDisclaimer: data.contractor.include_pricing_disclaimer,
+              openingLine: responseBody.contractor.opening_line,
+              closingLine: responseBody.contractor.closing_line,
+              includePricingDisclaimer: responseBody.contractor.include_pricing_disclaimer,
             },
-            products: (data.products ?? []).map((product: ProductRow) => ({
+            products: (responseBody.products ?? []).map((product: ProductRow) => ({
               id: product.id,
               name: product.name,
               description: product.description,
@@ -511,23 +525,15 @@ export const claimOnboardingContext = async (): Promise<OnboardingContext | null
               isFeatured: product.is_featured,
             })),
           },
-          onboarding: mapOnboarding(data.onboarding as OnboardingRow),
-          subscription: data.subscription ? mapSubscription(data.subscription as SubscriptionRow) : null,
+          onboarding: mapOnboarding(responseBody.onboarding as OnboardingRow),
+          subscription: responseBody.subscription ? mapSubscription(responseBody.subscription as SubscriptionRow) : null,
         };
       }
 
-      let detailedMessage = error.message;
-      try {
-        const response = error.context as Response | undefined;
-        if (response) {
-          const responseBody = await response.clone().json().catch(async () => ({ error: await response.text() }));
-          if (typeof responseBody?.error === "string" && responseBody.error.length > 0) {
-            detailedMessage = responseBody.error;
-          }
-        }
-      } catch {
-        // Keep the default edge-function error message when the response body is unavailable.
-      }
+      const detailedMessage =
+        typeof responseBody?.error === "string" && responseBody.error.length > 0
+          ? responseBody.error
+          : `Onboarding request failed with status ${response.status}.`;
 
       lastError = new Error(detailedMessage);
     }
