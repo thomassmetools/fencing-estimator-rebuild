@@ -149,10 +149,6 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
     };
   }, [mode, points]);
 
-  useEffect(() => {
-    onMeasurementChange(null);
-  }, [mode, onMeasurementChange]);
-
   const addPoint = (point: MapPoint) => {
     setPoints((current) => [...current, point]);
   };
@@ -244,6 +240,7 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
             onClick={() => {
               setMode("distance");
               setPoints([]);
+              onMeasurementChange(null);
             }}
           >
             Distance
