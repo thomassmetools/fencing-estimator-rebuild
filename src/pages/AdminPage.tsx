@@ -4,8 +4,8 @@ import { AdminLeadList } from "../components/AdminLeadList";
 import { AdminProductsTable } from "../components/AdminProductsTable";
 import { AdminSettingsForm } from "../components/AdminSettingsForm";
 import { useAuth } from "../hooks/useAuth";
-import { fetchAdminContractor, fetchLeadEvents, replaceProducts, updateContractorSettings } from "../lib/repository";
-import type { ContractorRecord, LeadRecord, Product } from "../types";
+import { fetchAdminContractor, fetchLeadEvents, replaceProducts, updateContractorSettings, updateLeadEvent } from "../lib/repository";
+import type { ContractorRecord, LeadRecord, LeadStatus, Product } from "../types";
 
 interface AdminPageProps {
   refreshPublicContractors: () => Promise<void>;
@@ -136,6 +136,25 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
     window.setTimeout(() => setProductsStatus("idle"), 1600);
   };
 
+  const updateLead = async (
+    leadId: string,
+    updates: Partial<{
+      status: LeadStatus;
+      internalNotes: string;
+      archivedAt: string | null;
+      deletedAt: string | null;
+    }>,
+  ) => {
+    const nextLead = await updateLeadEvent(leadId, updates);
+    setLeads((current) => {
+      if (nextLead.deletedAt) {
+        return current.filter((lead) => lead.id !== leadId);
+      }
+
+      return current.map((lead) => (lead.id === leadId ? nextLead : lead));
+    });
+  };
+
   return (
     <main className="page-shell admin-shell">
       <section className="admin-hero">
@@ -161,7 +180,13 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
         <AdminSettingsForm key={`settings-${contractor.id}`} contractor={contractor} onSave={saveSettings} saveStatus={settingsStatus} />
         <AdminProductsTable key={`products-${contractor.id}-${contractor.products.length}`} products={contractor.products} onSave={saveProducts} saveStatus={productsStatus} />
       </section>
-      <AdminLeadList leads={leads} isLoading={isLoadingLeads} error={leadsError} onRefresh={() => loadLeads(contractor.id)} />
+      <AdminLeadList
+        leads={leads}
+        isLoading={isLoadingLeads}
+        error={leadsError}
+        onRefresh={() => loadLeads(contractor.id)}
+        onUpdateLead={updateLead}
+      />
     </main>
   );
 };

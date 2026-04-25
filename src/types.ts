@@ -57,6 +57,8 @@ export interface SelectedProduct {
   quantity: number;
 }
 
+export type LeadStatus = "new" | "contacted" | "quoted" | "won" | "lost";
+
 export interface LeadRecord {
   id: string;
   contractorId: string;
@@ -71,7 +73,13 @@ export interface LeadRecord {
   estimatedTotal: number | null;
   selectedProductsSummary: string[];
   source: "copy" | "submit";
+  status: LeadStatus;
+  internalNotes: string;
+  lastContactedAt: string | null;
+  archivedAt: string | null;
+  deletedAt: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface SubscriptionRecord {

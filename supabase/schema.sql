@@ -87,11 +87,50 @@ create table if not exists public.lead_events (
   estimated_total numeric(12,2),
   selected_products_summary text[] not null default '{}',
   source text not null check (source in ('copy', 'submit')),
-  created_at timestamptz not null default now()
+  status text not null default 'new' check (status in ('new', 'contacted', 'quoted', 'won', 'lost')),
+  internal_notes text not null default '',
+  last_contacted_at timestamptz,
+  archived_at timestamptz,
+  deleted_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 alter table public.lead_events
 add column if not exists measurement_points jsonb not null default '[]'::jsonb;
+
+alter table public.lead_events
+add column if not exists status text not null default 'new';
+
+alter table public.lead_events
+add column if not exists internal_notes text not null default '';
+
+alter table public.lead_events
+add column if not exists last_contacted_at timestamptz;
+
+alter table public.lead_events
+add column if not exists archived_at timestamptz;
+
+alter table public.lead_events
+add column if not exists deleted_at timestamptz;
+
+alter table public.lead_events
+add column if not exists updated_at timestamptz not null default now();
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'lead_events_status_check'
+      and conrelid = 'public.lead_events'::regclass
+  ) then
+    alter table public.lead_events
+    add constraint lead_events_status_check
+    check (status in ('new', 'contacted', 'quoted', 'won', 'lost'));
+  end if;
+end;
+$$;
 
 create or replace function public.touch_updated_at()
 returns trigger
@@ -124,6 +163,12 @@ execute function public.touch_updated_at();
 drop trigger if exists onboarding_progress_touch_updated_at on public.onboarding_progress;
 create trigger onboarding_progress_touch_updated_at
 before update on public.onboarding_progress
+for each row
+execute function public.touch_updated_at();
+
+drop trigger if exists lead_events_touch_updated_at on public.lead_events;
+create trigger lead_events_touch_updated_at
+before update on public.lead_events
 for each row
 execute function public.touch_updated_at();
 
@@ -254,6 +299,29 @@ using (
     from public.contractor_users cu
     where cu.contractor_id = lead_events.contractor_id
       and cu.auth_user_id = auth.uid()
+  )
+);
+
+drop policy if exists "Admins can update their contractor leads" on public.lead_events;
+create policy "Admins can update their contractor leads"
+on public.lead_events
+for update
+using (
+  exists (
+    select 1
+    from public.contractor_users cu
+    where cu.contractor_id = lead_events.contractor_id
+      and cu.auth_user_id = auth.uid()
+      and cu.role = 'admin'
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.contractor_users cu
+    where cu.contractor_id = lead_events.contractor_id
+      and cu.auth_user_id = auth.uid()
+      and cu.role = 'admin'
   )
 );
 

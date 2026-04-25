@@ -2,6 +2,7 @@ import { seedContractors } from "../data/seed";
 import { getSupabaseAnonKey, getSupabaseClient, getSupabaseUrl, isSupabaseConfigured } from "./supabase";
 import type {
   ContractorRecord,
+  LeadStatus,
   LeadRecord,
   MeasurementResult,
   OnboardingContext,
@@ -53,7 +54,13 @@ type LeadRow = {
   estimated_total: number | null;
   selected_products_summary: string[] | null;
   source: "copy" | "submit";
+  status: LeadStatus;
+  internal_notes: string;
+  last_contacted_at: string | null;
+  archived_at: string | null;
+  deleted_at: string | null;
   created_at: string;
+  updated_at: string;
 };
 
 type SubscriptionRow = {
@@ -122,7 +129,13 @@ const leadColumns = `
   estimated_total,
   selected_products_summary,
   source,
-  created_at
+  status,
+  internal_notes,
+  last_contacted_at,
+  archived_at,
+  deleted_at,
+  created_at,
+  updated_at
 `;
 
 const onboardingColumns = `
@@ -193,7 +206,13 @@ const mapLead = (row: LeadRow): LeadRecord => ({
   estimatedTotal: row.estimated_total,
   selectedProductsSummary: row.selected_products_summary ?? [],
   source: row.source,
+  status: row.status ?? "new",
+  internalNotes: row.internal_notes ?? "",
+  lastContactedAt: row.last_contacted_at ?? null,
+  archivedAt: row.archived_at ?? null,
+  deletedAt: row.deleted_at ?? null,
   createdAt: row.created_at,
+  updatedAt: row.updated_at ?? row.created_at,
 });
 
 const mapSubscription = (row: SubscriptionRow): SubscriptionRecord => ({
@@ -473,14 +492,64 @@ export const fetchLeadEvents = async (contractorId: string): Promise<LeadRecord[
     .from("lead_events")
     .select(leadColumns)
     .eq("contractor_id", contractorId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(100);
 
   if (error) {
     throw error;
   }
 
   return ((data ?? []) as LeadRow[]).map(mapLead);
+};
+
+export const updateLeadEvent = async (
+  leadId: string,
+  updates: Partial<{
+    status: LeadStatus;
+    internalNotes: string;
+    archivedAt: string | null;
+    deletedAt: string | null;
+    lastContactedAt: string | null;
+  }>,
+): Promise<LeadRecord> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const payload: Record<string, string | null> = {};
+
+  if (updates.status !== undefined) {
+    payload.status = updates.status;
+    if (updates.status === "contacted" && updates.lastContactedAt === undefined) {
+      payload.last_contacted_at = new Date().toISOString();
+    }
+  }
+
+  if (updates.internalNotes !== undefined) {
+    payload.internal_notes = updates.internalNotes;
+  }
+
+  if (updates.archivedAt !== undefined) {
+    payload.archived_at = updates.archivedAt;
+  }
+
+  if (updates.deletedAt !== undefined) {
+    payload.deleted_at = updates.deletedAt;
+  }
+
+  if (updates.lastContactedAt !== undefined) {
+    payload.last_contacted_at = updates.lastContactedAt;
+  }
+
+  const { data, error } = await supabase.from("lead_events").update(payload).eq("id", leadId).select(leadColumns).single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapLead(data as LeadRow);
 };
 
 export const claimOnboardingContext = async (): Promise<OnboardingContext | null> => {

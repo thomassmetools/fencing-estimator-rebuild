@@ -217,6 +217,12 @@ Deno.serve(async (request) => {
         estimated_total,
         selected_products_summary,
         source,
+        status,
+        internal_notes,
+        last_contacted_at,
+        archived_at,
+        deleted_at,
+        updated_at,
         created_at
       `)
       .single();
