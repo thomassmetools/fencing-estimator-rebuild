@@ -89,6 +89,23 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
     });
   }, [leads, searchQuery, showArchived, statusFilter]);
 
+  const leadStats = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const activeLeads = leads.filter((lead) => !lead.archivedAt && !lead.deletedAt);
+    const leadsThisMonth = activeLeads.filter((lead) => new Date(lead.createdAt) >= monthStart);
+    const openValue = activeLeads
+      .filter((lead) => lead.status !== "lost")
+      .reduce((sum, lead) => sum + (lead.estimatedTotal ?? 0), 0);
+
+    return {
+      newCount: activeLeads.filter((lead) => lead.status === "new").length,
+      monthCount: leadsThisMonth.length,
+      wonCount: activeLeads.filter((lead) => lead.status === "won").length,
+      openValue,
+    };
+  }, [leads]);
+
   const performLeadUpdate = async (
     leadId: string,
     updates: Parameters<AdminLeadListProps["onUpdateLead"]>[1],
@@ -164,6 +181,25 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
 
       {error ? <p className="error-text">{error}</p> : null}
       {actionError ? <p className="error-text">{actionError}</p> : null}
+
+      <div className="lead-stat-grid">
+        <div className="lead-stat-card">
+          <span className="summary-label">New</span>
+          <strong>{leadStats.newCount}</strong>
+        </div>
+        <div className="lead-stat-card">
+          <span className="summary-label">This month</span>
+          <strong>{leadStats.monthCount}</strong>
+        </div>
+        <div className="lead-stat-card">
+          <span className="summary-label">Won</span>
+          <strong>{leadStats.wonCount}</strong>
+        </div>
+        <div className="lead-stat-card">
+          <span className="summary-label">Open value</span>
+          <strong>{leadStats.openValue > 0 ? currency.format(leadStats.openValue) : "$0"}</strong>
+        </div>
+      </div>
 
       {filteredLeads.length === 0 ? (
         <p className="helper-text">No matching leads yet. New submitted enquiries will appear here.</p>

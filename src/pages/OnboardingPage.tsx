@@ -29,6 +29,7 @@ export const OnboardingPage = () => {
   const [draft, setDraft] = useState<ContractorRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) {
@@ -65,6 +66,24 @@ export const OnboardingPage = () => {
 
     return draft.slug;
   }, [draft]);
+
+  const publicUrl = useMemo(() => {
+    if (!draft || typeof window === "undefined") {
+      return "";
+    }
+
+    return `${window.location.origin}/${draft.slug}`;
+  }, [draft]);
+
+  const facebookShareText = useMemo(() => {
+    return `Need a fence quote? Measure your fence line and send us the details here: ${publicUrl}`;
+  }, [publicUrl]);
+
+  const copyShareText = async (value: string, label: string) => {
+    await navigator.clipboard.writeText(value);
+    setShareStatus(label);
+    window.setTimeout(() => setShareStatus(null), 1800);
+  };
 
   if (!isLoading && !session) {
     return <Navigate to="/login?next=/onboarding" replace />;
@@ -215,13 +234,17 @@ export const OnboardingPage = () => {
           <p className="eyebrow">Onboarding</p>
           <h1>{draft.contact.businessName || "New contractor account"}</h1>
           <p>
-            This is the first-pass wizard for getting a paid customer live. It uses the payment-created contractor record
-            and lets them fill the rest of their business details and first products.
+            Add your business details, confirm the products customers can choose, then publish your estimator.
           </p>
         </div>
         <div className="admin-hero-links">
           <span>Plan: {context.subscription?.planCode ?? "starter-monthly"}</span>
           <span>Suggested URL: /{recommendedSlug}</span>
+          {context.onboarding.isLive ? (
+            <a href={publicUrl} target="_blank" rel="noreferrer">
+              Open estimator
+            </a>
+          ) : null}
         </div>
       </section>
 
@@ -334,7 +357,11 @@ export const OnboardingPage = () => {
       <section className="panel helper-panel">
         <div className="admin-footer">
           {error ? <p className="error-text">{error}</p> : null}
-          {saveStatus === "saved" ? <p className="success-text">Onboarding details saved.</p> : null}
+          {saveStatus === "saved" ? (
+            <p className="success-text">
+              {context.onboarding.isLive ? "Your estimator is live." : "Onboarding details saved."}
+            </p>
+          ) : null}
           <button type="button" onClick={() => void handleSave(false)} disabled={saveStatus === "saving"}>
             Save progress
           </button>
@@ -342,6 +369,23 @@ export const OnboardingPage = () => {
             {saveStatus === "saving" ? "Publishing..." : "Save and go live"}
           </button>
         </div>
+        {context.onboarding.isLive ? (
+          <div className="go-live-share">
+            <div>
+              <h2>Share your estimator</h2>
+              <p className="helper-text">Copy this into a Facebook post, message, website button, or email signature.</p>
+            </div>
+            <div className="share-actions">
+              <button type="button" className="primary" onClick={() => void copyShareText(facebookShareText, "Facebook post copied.")}>
+                Copy Facebook post
+              </button>
+              <button type="button" onClick={() => void copyShareText(publicUrl, "Estimator link copied.")}>
+                Copy estimator link
+              </button>
+              {shareStatus ? <p className="success-text">{shareStatus}</p> : null}
+            </div>
+          </div>
+        ) : null}
       </section>
     </main>
   );

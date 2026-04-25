@@ -229,7 +229,7 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
     <section className="panel panel-map">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Fence length</p>
+          <p className="eyebrow">Step 1</p>
           <h2>Measure your fence line</h2>
           <p>Search the address, then click each corner or end point of the fence.</p>
         </div>

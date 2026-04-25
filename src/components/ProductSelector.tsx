@@ -32,7 +32,7 @@ export const ProductSelector = ({ products, selectedProducts, onSelectionChange,
     <section className="panel panel-stack">
       <div className="panel-header compact">
         <div>
-          <p className="eyebrow">Fence type</p>
+          <p className="eyebrow">Step 2</p>
           <h2>Choose your preferred fence</h2>
           <p>
             {measuredLength

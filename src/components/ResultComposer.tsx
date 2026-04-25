@@ -22,6 +22,7 @@ export const ResultComposer = ({
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileNonce, setTurnstileNonce] = useState(0);
   const [copyLabel, setCopyLabel] = useState("Copy result");
   const [submitStatus, setSubmitStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,11 @@ export const ResultComposer = ({
   };
 
   const submitLead = async () => {
+    if (!customerName.trim()) {
+      setError("Please enter your name so the contractor knows who to contact.");
+      return;
+    }
+
     if (!measurement) {
       setError("Please save your fence length before sending the enquiry.");
       return;
@@ -82,8 +88,11 @@ export const ResultComposer = ({
         turnstileToken,
       });
       setSubmitStatus("saved");
+      setCustomerEmail("");
+      setCustomerPhone("");
+      onCustomerNameChange("");
       setTurnstileToken("");
-      window.setTimeout(() => setSubmitStatus("idle"), 2000);
+      setTurnstileNonce((current) => current + 1);
     } catch (leadError) {
       setError(leadError instanceof Error ? leadError.message : "Unable to submit lead.");
       setSubmitStatus("idle");
@@ -94,25 +103,49 @@ export const ResultComposer = ({
     <section className="panel panel-stack">
       <div className="panel-header compact">
         <div>
-          <p className="eyebrow">Send enquiry</p>
+          <p className="eyebrow">Step 3</p>
           <h2>Your fence enquiry</h2>
-          <p>Check the details below, then send them to the contractor.</p>
+          <p>Enter your contact details, check the summary, then send it to the contractor.</p>
         </div>
       </div>
 
       <label className="field-stack">
-        <span>Customer name</span>
-        <input type="text" placeholder="Optional but useful" value={customerName} onChange={(event) => onCustomerNameChange(event.target.value)} />
+        <span>Your name</span>
+        <input
+          type="text"
+          placeholder="Required"
+          value={customerName}
+          onChange={(event) => {
+            onCustomerNameChange(event.target.value);
+            setError(null);
+          }}
+        />
       </label>
 
       <div className="contact-form-grid">
         <label className="field-stack">
           <span>Email</span>
-          <input type="email" placeholder="Email or phone required" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} />
+          <input
+            type="email"
+            placeholder="Email or phone required"
+            value={customerEmail}
+            onChange={(event) => {
+              setCustomerEmail(event.target.value);
+              setError(null);
+            }}
+          />
         </label>
         <label className="field-stack">
           <span>Phone</span>
-          <input type="tel" placeholder="Email or phone required" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} />
+          <input
+            type="tel"
+            placeholder="Email or phone required"
+            value={customerPhone}
+            onChange={(event) => {
+              setCustomerPhone(event.target.value);
+              setError(null);
+            }}
+          />
         </label>
       </div>
 
@@ -132,13 +165,23 @@ export const ResultComposer = ({
       </div>
 
       <textarea className="result-area" value={message} readOnly />
-      <TurnstileWidget onTokenChange={setTurnstileToken} />
+      {submitStatus === "saved" ? (
+        <div className="success-panel">
+          <strong>Enquiry sent.</strong>
+          <p>The contractor has received your fence details and can follow up from the admin portal.</p>
+          <button type="button" onClick={() => setSubmitStatus("idle")}>
+            Send another enquiry
+          </button>
+        </div>
+      ) : (
+        <TurnstileWidget key={turnstileNonce} onTokenChange={setTurnstileToken} />
+      )}
 
       <div className="action-row stretch">
         <button type="button" className="primary" onClick={() => void copyMessage()}>
           {copyLabel}
         </button>
-        <button type="button" onClick={() => void submitLead()} disabled={submitStatus === "saving"}>
+        <button type="button" onClick={() => void submitLead()} disabled={submitStatus === "saving" || submitStatus === "saved"}>
           {submitStatus === "saving" ? "Sending..." : submitStatus === "saved" ? "Enquiry sent" : "Send enquiry"}
         </button>
         <a href={`mailto:${contractor.contact.email}?subject=Fence%20estimate%20request&body=${encodeURIComponent(message)}`}>

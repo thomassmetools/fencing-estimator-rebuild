@@ -107,6 +107,21 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
         </div>
       </section>
 
+      <section className="estimator-steps" aria-label="Estimator steps">
+        <div>
+          <span>1</span>
+          <strong>Measure</strong>
+        </div>
+        <div>
+          <span>2</span>
+          <strong>Choose</strong>
+        </div>
+        <div>
+          <span>3</span>
+          <strong>Send</strong>
+        </div>
+      </section>
+
       <section className="estimator-grid">
         <MapMeasurePanel onMeasurementChange={handleMeasurementChange} />
         <aside className="sidebar-stack">

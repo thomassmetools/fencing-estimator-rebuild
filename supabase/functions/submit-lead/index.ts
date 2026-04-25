@@ -63,23 +63,35 @@ const sendLeadNotification = async ({
 
   const measurementSummary =
     measurementMode && measurementValue && measurementUnit
-      ? `${measurementMode}: ${measurementValue.toFixed(1)} ${measurementUnit}`
+      ? `${measurementMode === "distance" ? "Fence length" : "Measured area"}: ${measurementValue.toFixed(1)} ${measurementUnit}`
       : "No measurement saved";
+  const adminUrl = `${publicSiteUrl}/admin/${contractorSlug}`;
+  const contactLine =
+    customerEmail && customerPhone
+      ? `${customerEmail} / ${customerPhone}`
+      : customerEmail || customerPhone || "No contact details provided";
 
   const lines = [
-    `New estimator lead for ${businessName}`,
+    `New fence enquiry for ${businessName}`,
+    "================================",
     "",
-    `Customer: ${customerName || "Not provided"}`,
-    `Email: ${customerEmail || "Not provided"}`,
-    `Phone: ${customerPhone || "Not provided"}`,
+    "Customer",
+    "--------",
+    `Name: ${customerName || "Not provided"}`,
+    `Contact: ${contactLine}`,
+    "",
+    "Project",
+    "-------",
     `Measurement: ${measurementSummary}`,
-    `Estimated material total: ${estimatedTotal ? `$${estimatedTotal.toFixed(2)}` : "Not calculated"}`,
-    `Products: ${selectedProductsSummary.length > 0 ? selectedProductsSummary.join(" | ") : "None selected"}`,
+    `Selected products: ${selectedProductsSummary.length > 0 ? selectedProductsSummary.join(" | ") : "None selected"}`,
+    `Estimated material total: ${estimatedTotal ? `NZ$${estimatedTotal.toFixed(2)}` : "Not calculated"}`,
     "",
     "Customer message:",
     message,
     "",
-    `Open admin: ${publicSiteUrl}/admin/${contractorSlug}`,
+    "Next step",
+    "---------",
+    `Open this lead in admin: ${adminUrl}`,
   ];
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -92,7 +104,7 @@ const sendLeadNotification = async ({
       from: resendFromEmail,
       to: [contractorEmail],
       reply_to: customerEmail || undefined,
-      subject: `New estimator lead for ${businessName}`,
+      subject: `New fence enquiry: ${customerName || "Customer"} for ${businessName}`,
       text: lines.join("\n"),
     }),
   });
@@ -149,6 +161,20 @@ Deno.serve(async (request) => {
 
     if (!body.contractor_id || !body.message || body.measurement_points.length < 2) {
       return new Response(JSON.stringify({ error: "Lead is missing required fields." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!body.customer_name?.trim()) {
+      return new Response(JSON.stringify({ error: "Customer name is required." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!body.customer_email?.trim() && !body.customer_phone?.trim()) {
+      return new Response(JSON.stringify({ error: "Customer email or phone is required." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -22,8 +22,25 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
   const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [isLoadingLeads, setIsLoadingLeads] = useState(false);
   const [leadsError, setLeadsError] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
 
   const publicUrl = useMemo(() => `${window.location.origin}/${slug}`, [slug]);
+  const facebookShareText = useMemo(
+    () =>
+      `Need a fence quote? Measure your fence line and send us the details here: ${publicUrl}`,
+    [publicUrl],
+  );
+  const embedCode = useMemo(
+    () =>
+      `<iframe src="${publicUrl}" title="${contractor?.contact.businessName ?? "Fence estimator"}" style="width:100%;min-height:760px;border:0;"></iframe>`,
+    [contractor?.contact.businessName, publicUrl],
+  );
+
+  const copyShareText = async (value: string, label: string) => {
+    await navigator.clipboard.writeText(value);
+    setShareStatus(label);
+    window.setTimeout(() => setShareStatus(null), 1800);
+  };
 
   const loadLeads = async (contractorId: string) => {
     setIsLoadingLeads(true);
@@ -167,12 +184,32 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
           <a href={publicUrl} target="_blank" rel="noreferrer">
             Open public estimator
           </a>
-          <button type="button" onClick={() => navigator.clipboard.writeText(publicUrl)}>
+          <button type="button" onClick={() => void copyShareText(publicUrl, "Estimator link copied.")}>
             Copy share link
           </button>
           <button type="button" onClick={() => void signOut()}>
             Sign out
           </button>
+        </div>
+      </section>
+
+      <section className="panel share-panel">
+        <div>
+          <p className="eyebrow">Share estimator</p>
+          <h2>Put this link where customers already are</h2>
+          <p>Use the estimator link in Facebook posts, website buttons, email signatures, or messages.</p>
+        </div>
+        <div className="share-actions">
+          <button type="button" className="primary" onClick={() => void copyShareText(facebookShareText, "Facebook post copied.")}>
+            Copy Facebook post
+          </button>
+          <button type="button" onClick={() => void copyShareText(publicUrl, "Estimator link copied.")}>
+            Copy link
+          </button>
+          <button type="button" onClick={() => void copyShareText(embedCode, "Website embed copied.")}>
+            Copy website embed
+          </button>
+          {shareStatus ? <p className="success-text">{shareStatus}</p> : null}
         </div>
       </section>
 
