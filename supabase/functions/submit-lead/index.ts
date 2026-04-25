@@ -59,6 +59,11 @@ const sendLeadNotification = async ({
   estimatedTotal: number | null;
 }) => {
   if (!resendApiKey || !resendFromEmail || !contractorEmail) {
+    console.warn("Lead email notification skipped.", {
+      hasResendApiKey: Boolean(resendApiKey),
+      hasResendFromEmail: Boolean(resendFromEmail),
+      hasContractorEmail: Boolean(contractorEmail),
+    });
     return;
   }
 

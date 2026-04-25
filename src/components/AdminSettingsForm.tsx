@@ -7,6 +7,11 @@ interface AdminSettingsFormProps {
   saveStatus: "idle" | "saving" | "saved";
 }
 
+const normaliseColorValue = (value: string, fallback: string) => {
+  const trimmed = value.trim();
+  return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed : fallback;
+};
+
 export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSettingsFormProps) => {
   const [draft, setDraft] = useState(contractor);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +31,37 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
       ...current,
       measurementSystem,
     }));
+  };
+
+  const renderColorField = (
+    label: string,
+    key: keyof ContractorRecord["branding"],
+    fallback: string,
+  ) => {
+    const value = normaliseColorValue(draft.branding[key] as string, fallback);
+
+    return (
+      <label className="field-stack" key={key}>
+        <span>{label}</span>
+        <div className="color-field">
+          <input
+            className="color-wheel"
+            type="color"
+            value={value}
+            onChange={(event) => updateField("branding", key, event.target.value)}
+            aria-label={`${label} picker`}
+          />
+          <input
+            type="text"
+            value={draft.branding[key] as string}
+            onChange={(event) => updateField("branding", key, event.target.value)}
+            placeholder={fallback}
+            spellCheck={false}
+          />
+          <span className="color-swatch" style={{ backgroundColor: value }} aria-hidden="true" />
+        </div>
+      </label>
+    );
   };
 
   const handleSave = async () => {
@@ -86,14 +122,8 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
           <span>Intro text</span>
           <textarea rows={3} value={draft.branding.introText} onChange={(event) => updateField("branding", "introText", event.target.value)} />
         </label>
-        <label className="field-stack">
-          <span>Primary color</span>
-          <input value={draft.branding.primaryColor} onChange={(event) => updateField("branding", "primaryColor", event.target.value)} />
-        </label>
-        <label className="field-stack">
-          <span>Accent color</span>
-          <input value={draft.branding.accentColor} onChange={(event) => updateField("branding", "accentColor", event.target.value)} />
-        </label>
+        {renderColorField("Primary color", "primaryColor", "#1d4f41")}
+        {renderColorField("Accent color", "accentColor", "#d8a64f")}
         <label className="field-stack full-span">
           <span>Opening line</span>
           <textarea rows={2} value={draft.resultTemplate.openingLine} onChange={(event) => updateField("resultTemplate", "openingLine", event.target.value)} />
