@@ -5,11 +5,14 @@ export interface MapPoint {
   lng: number;
 }
 
+export type MeasurementSystem = "metric" | "imperial";
+export type ProductUnit = "lineal metre" | "metre squared" | "lineal foot" | "square foot" | "each";
+
 export interface Product {
   id: string;
   name: string;
   description: string;
-  unit: "lineal metre" | "metre squared" | "each";
+  unit: ProductUnit;
   basePrice: number;
   isFeatured?: boolean;
 }
@@ -38,6 +41,7 @@ export interface ResultTemplate {
 export interface ContractorRecord {
   id: string;
   slug: string;
+  measurementSystem: MeasurementSystem;
   branding: ContractorBranding;
   contact: ContractorContact;
   resultTemplate: ResultTemplate;
@@ -47,6 +51,7 @@ export interface ContractorRecord {
 export interface MeasurementResult {
   mode: MeasurementMode;
   value: number;
+  baseValue: number;
   unitLabel: string;
   pointCount: number;
   points: MapPoint[];

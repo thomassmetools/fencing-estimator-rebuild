@@ -35,11 +35,20 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
       return;
     }
 
-    const measuredLength = Math.ceil(nextMeasurement.value);
-    const linealProducts = contractor.products.filter((product) => product.unit === "lineal metre");
-    const preferredProduct = linealProducts.find((product) => product.isFeatured) ?? linealProducts[0];
+    const measuredLengthByUnit = {
+      "lineal metre": Math.ceil(nextMeasurement.baseValue),
+      "lineal foot": Math.ceil(nextMeasurement.unitLabel === "ft" ? nextMeasurement.value : nextMeasurement.baseValue * 3.28084),
+    };
+    const linealProducts = contractor.products.filter((product) => product.unit === "lineal metre" || product.unit === "lineal foot");
+    const preferredUnit = contractor.measurementSystem === "imperial" ? "lineal foot" : "lineal metre";
+    const preferredProduct =
+      linealProducts.find((product) => product.unit === preferredUnit && product.isFeatured) ??
+      linealProducts.find((product) => product.unit === preferredUnit) ??
+      linealProducts.find((product) => product.isFeatured) ??
+      linealProducts[0];
+    const preferredLength = preferredProduct ? measuredLengthByUnit[preferredProduct.unit as "lineal metre" | "lineal foot"] : 0;
 
-    if (!preferredProduct || measuredLength <= 0) {
+    if (!preferredProduct || preferredLength <= 0) {
       return;
     }
 
@@ -49,12 +58,12 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
       );
 
       if (!hasLinealSelection) {
-        return [...current, { productId: preferredProduct.id, quantity: measuredLength }];
+        return [...current, { productId: preferredProduct.id, quantity: preferredLength }];
       }
 
       return current.map((selection) => {
         const product = linealProducts.find((item) => item.id === selection.productId);
-        return product ? { ...selection, quantity: measuredLength } : selection;
+        return product ? { ...selection, quantity: measuredLengthByUnit[product.unit as "lineal metre" | "lineal foot"] } : selection;
       });
     });
   };
@@ -123,13 +132,13 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
       </section>
 
       <section className="estimator-grid">
-        <MapMeasurePanel onMeasurementChange={handleMeasurementChange} />
+        <MapMeasurePanel onMeasurementChange={handleMeasurementChange} measurementSystem={contractor.measurementSystem} />
         <aside className="sidebar-stack">
           <ProductSelector
             products={contractor.products}
             selectedProducts={selectedProducts}
             onSelectionChange={setSelectedProducts}
-            measuredLength={measurement?.mode === "distance" ? Math.ceil(measurement.value) : null}
+            measuredLengthLabel={measurement?.mode === "distance" ? `${Math.ceil(measurement.value)} ${measurement.unitLabel}` : null}
           />
           <ResultComposer
             contractor={contractor}

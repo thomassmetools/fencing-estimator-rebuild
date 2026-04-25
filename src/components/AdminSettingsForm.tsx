@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ContractorRecord } from "../types";
+import type { ContractorRecord, MeasurementSystem } from "../types";
 
 interface AdminSettingsFormProps {
   contractor: ContractorRecord;
@@ -18,6 +18,13 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
         ...current[section],
         [key]: value,
       },
+    }));
+  };
+
+  const updateMeasurementSystem = (measurementSystem: MeasurementSystem) => {
+    setDraft((current) => ({
+      ...current,
+      measurementSystem,
     }));
   };
 
@@ -56,6 +63,16 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
         <label className="field-stack">
           <span>Website</span>
           <input value={draft.contact.website} onChange={(event) => updateField("contact", "website", event.target.value)} />
+        </label>
+        <label className="field-stack">
+          <span>Customer measurements</span>
+          <select
+            value={draft.measurementSystem}
+            onChange={(event) => updateMeasurementSystem(event.target.value as MeasurementSystem)}
+          >
+            <option value="metric">Metric (metres)</option>
+            <option value="imperial">Imperial (feet)</option>
+          </select>
         </label>
         <label className="field-stack full-span">
           <span>Facebook URL</span>

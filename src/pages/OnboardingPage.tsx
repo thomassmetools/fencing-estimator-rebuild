@@ -8,7 +8,7 @@ import {
   updateContractorSettings,
   updateOnboardingProgress,
 } from "../lib/repository";
-import type { ContractorRecord, OnboardingContext, Product } from "../types";
+import type { ContractorRecord, MeasurementSystem, OnboardingContext, Product } from "../types";
 
 const defaultProduct = (): Product => ({
   id: crypto.randomUUID(),
@@ -132,6 +132,10 @@ export const OnboardingPage = () => {
 
   const updateBranding = (key: keyof ContractorRecord["branding"], value: string) => {
     setDraft((current) => (current ? { ...current, branding: { ...current.branding, [key]: value } } : current));
+  };
+
+  const updateMeasurementSystem = (measurementSystem: MeasurementSystem) => {
+    setDraft((current) => (current ? { ...current, measurementSystem } : current));
   };
 
   const renderColorField = (
@@ -274,6 +278,13 @@ export const OnboardingPage = () => {
               <span>Website</span>
               <input value={draft.contact.website} onChange={(event) => updateContact("website", event.target.value)} />
             </label>
+            <label className="field-stack">
+              <span>Customer measurements</span>
+              <select value={draft.measurementSystem} onChange={(event) => updateMeasurementSystem(event.target.value as MeasurementSystem)}>
+                <option value="metric">Metric (metres)</option>
+                <option value="imperial">Imperial (feet)</option>
+              </select>
+            </label>
             <label className="field-stack full-span">
               <span>Facebook URL</span>
               <input value={draft.contact.facebookUrl} onChange={(event) => updateContact("facebookUrl", event.target.value)} />
@@ -323,6 +334,8 @@ export const OnboardingPage = () => {
                     <select value={product.unit} onChange={(event) => updateProduct(product.id, "unit", event.target.value)}>
                       <option value="lineal metre">lineal metre</option>
                       <option value="metre squared">metre squared</option>
+                      <option value="lineal foot">lineal foot</option>
+                      <option value="square foot">square foot</option>
                       <option value="each">each</option>
                     </select>
                   </label>

@@ -66,6 +66,8 @@ export const AdminProductsTable = ({ products, onSave, saveStatus }: AdminProduc
                 <select value={product.unit} onChange={(event) => updateProduct(product.id, "unit", event.target.value)}>
                   <option value="lineal metre">lineal metre</option>
                   <option value="metre squared">metre squared</option>
+                  <option value="lineal foot">lineal foot</option>
+                  <option value="square foot">square foot</option>
                   <option value="each">each</option>
                 </select>
               </label>

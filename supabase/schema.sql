@@ -3,6 +3,7 @@ create extension if not exists "pgcrypto";
 create table if not exists public.contractors (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
+  measurement_system text not null default 'metric' check (measurement_system in ('metric', 'imperial')),
   business_name text not null,
   phone text not null default '',
   email text not null default '',
@@ -32,6 +33,41 @@ create table if not exists public.products (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.contractors
+add column if not exists measurement_system text not null default 'metric';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'contractors_measurement_system_check'
+      and conrelid = 'public.contractors'::regclass
+  ) then
+    alter table public.contractors
+    add constraint contractors_measurement_system_check
+    check (measurement_system in ('metric', 'imperial'));
+  end if;
+end;
+$$;
+
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'products_unit_check'
+      and conrelid = 'public.products'::regclass
+  ) then
+    alter table public.products drop constraint products_unit_check;
+  end if;
+
+  alter table public.products
+  add constraint products_unit_check
+  check (unit in ('lineal metre', 'metre squared', 'lineal foot', 'square foot', 'each'));
+end;
+$$;
 
 create table if not exists public.contractor_users (
   id uuid primary key default gen_random_uuid(),
@@ -376,6 +412,7 @@ with check (
 
 insert into public.contractors (
   slug,
+  measurement_system,
   business_name,
   phone,
   email,
@@ -393,6 +430,7 @@ insert into public.contractors (
 values
 (
   'tasman-fencing',
+  'metric',
   'Tasman Fencing Co.',
   '+64 21 555 0199',
   'quotes@tasmanfencing.co.nz',
@@ -409,6 +447,7 @@ values
 ),
 (
   'boundaryline-rural',
+  'metric',
   'Boundaryline Rural',
   '+64 27 444 8821',
   'hello@boundarylinerural.co.nz',
@@ -425,6 +464,7 @@ values
 )
 on conflict (slug) do update set
   business_name = excluded.business_name,
+  measurement_system = excluded.measurement_system,
   phone = excluded.phone,
   email = excluded.email,
   website = excluded.website,

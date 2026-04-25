@@ -4,6 +4,7 @@ export const seedContractors: ContractorRecord[] = [
   {
     id: "contractor-tasman",
     slug: "tasman-fencing",
+    measurementSystem: "metric",
     branding: {
       primaryColor: "#1d4f41",
       accentColor: "#d8a64f",
@@ -51,6 +52,7 @@ export const seedContractors: ContractorRecord[] = [
   {
     id: "contractor-boundaryline",
     slug: "boundaryline-rural",
+    measurementSystem: "metric",
     branding: {
       primaryColor: "#55331d",
       accentColor: "#9db86f",

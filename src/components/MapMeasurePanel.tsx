@@ -8,10 +8,11 @@ import {
   satelliteTilesAttribution,
   satelliteTilesUrl,
 } from "../lib/map-config";
-import type { MapPoint, MeasurementMode, MeasurementResult } from "../types";
+import type { MapPoint, MeasurementMode, MeasurementResult, MeasurementSystem } from "../types";
 
 interface MapMeasurePanelProps {
   onMeasurementChange: (measurement: MeasurementResult | null) => void;
+  measurementSystem: MeasurementSystem;
 }
 
 interface SearchResult {
@@ -46,8 +47,11 @@ const calculatePolygonArea = (points: LatLngLiteral[]) => {
   return Math.abs(area) / 2;
 };
 
-const formatMeasurement = (mode: MeasurementMode, value: number) => {
-  return mode === "distance" ? `${value.toFixed(1)} m` : `${value.toFixed(1)} m²`;
+const metresToFeet = (value: number) => value * 3.28084;
+const squareMetresToSquareFeet = (value: number) => value * 10.7639;
+
+const formatMeasurement = (value: number, unitLabel: string) => {
+  return `${value.toFixed(1)} ${unitLabel}`;
 };
 
 const MapViewController = ({
@@ -96,7 +100,7 @@ const MapViewController = ({
   return null;
 };
 
-export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) => {
+export const MapMeasurePanel = ({ onMeasurementChange, measurementSystem }: MapMeasurePanelProps) => {
   const [mode, setMode] = useState<MeasurementMode>("distance");
   const [points, setPoints] = useState<MapPoint[]>([]);
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
@@ -127,10 +131,13 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
         totalDistance += 6_371_000 * c;
       }
 
+      const displayValue = measurementSystem === "imperial" ? metresToFeet(totalDistance) : totalDistance;
+
       return {
         mode,
-        value: totalDistance,
-        unitLabel: "m",
+        value: displayValue,
+        baseValue: totalDistance,
+        unitLabel: measurementSystem === "imperial" ? "ft" : "m",
         pointCount: points.length,
         points,
       };
@@ -140,14 +147,18 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
       return null;
     }
 
+    const areaSquareMetres = calculatePolygonArea(points);
+    const displayArea = measurementSystem === "imperial" ? squareMetresToSquareFeet(areaSquareMetres) : areaSquareMetres;
+
     return {
       mode,
-      value: calculatePolygonArea(points),
-      unitLabel: "m2",
+      value: displayArea,
+      baseValue: areaSquareMetres,
+      unitLabel: measurementSystem === "imperial" ? "sq ft" : "m2",
       pointCount: points.length,
       points,
     };
-  }, [mode, points]);
+  }, [measurementSystem, mode, points]);
 
   const addPoint = (point: MapPoint) => {
     setPoints((current) => [...current, point]);
@@ -360,7 +371,7 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
 
       <div className="map-toolbar">
         <div>
-          <strong>{measurement ? formatMeasurement(measurement.mode, measurement.value) : "No measurement yet"}</strong>
+          <strong>{measurement ? formatMeasurement(measurement.value, measurement.unitLabel) : "No measurement yet"}</strong>
           <p>{points.length} points added. Click along the fence line, then save the length for your enquiry.</p>
         </div>
         <div className="action-row">

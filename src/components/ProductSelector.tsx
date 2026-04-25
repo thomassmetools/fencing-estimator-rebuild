@@ -5,10 +5,10 @@ interface ProductSelectorProps {
   products: Product[];
   selectedProducts: SelectedProduct[];
   onSelectionChange: (selectedProducts: SelectedProduct[]) => void;
-  measuredLength: number | null;
+  measuredLengthLabel: string | null;
 }
 
-export const ProductSelector = ({ products, selectedProducts, onSelectionChange, measuredLength }: ProductSelectorProps) => {
+export const ProductSelector = ({ products, selectedProducts, onSelectionChange, measuredLengthLabel }: ProductSelectorProps) => {
   const updateSelection = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       onSelectionChange(selectedProducts.filter((entry) => entry.productId !== productId));
@@ -35,8 +35,8 @@ export const ProductSelector = ({ products, selectedProducts, onSelectionChange,
           <p className="eyebrow">Step 2</p>
           <h2>Choose your preferred fence</h2>
           <p>
-            {measuredLength
-              ? `We have filled lineal metre products with your saved ${measuredLength} m measurement.`
+            {measuredLengthLabel
+              ? `We have filled matching lineal products from your saved ${measuredLengthLabel} measurement.`
               : "Save your fence length first, then choose the product you want priced."}
           </p>
         </div>
@@ -61,7 +61,7 @@ export const ProductSelector = ({ products, selectedProducts, onSelectionChange,
                 </div>
               </div>
               <label className="quantity-field">
-                <span>{product.unit === "lineal metre" ? "Length" : "Quantity"}</span>
+                <span>{product.unit === "lineal metre" || product.unit === "lineal foot" ? "Length" : "Quantity"}</span>
                 <input
                   type="number"
                   min="0"

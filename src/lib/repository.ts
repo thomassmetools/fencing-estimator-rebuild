@@ -4,6 +4,7 @@ import type {
   ContractorRecord,
   LeadStatus,
   LeadRecord,
+  MeasurementSystem,
   MeasurementResult,
   OnboardingContext,
   OnboardingProgressRecord,
@@ -14,6 +15,7 @@ import type {
 type ContractorRow = {
   id: string;
   slug: string;
+  measurement_system: MeasurementSystem;
   business_name: string;
   phone: string;
   email: string;
@@ -89,6 +91,7 @@ type OnboardingRow = {
 const contractorColumns = `
   id,
   slug,
+  measurement_system,
   business_name,
   phone,
   email,
@@ -151,6 +154,7 @@ const mapContractor = (row: ContractorRow, products: ProductRow[]): ContractorRe
   return {
     id: row.id,
     slug: row.slug,
+    measurementSystem: row.measurement_system ?? "metric",
     branding: {
       primaryColor: row.primary_color,
       accentColor: row.accent_color,
@@ -336,6 +340,7 @@ export const updateContractorSettings = async (contractor: ContractorRecord) => 
     email: contractor.contact.email,
     website: contractor.contact.website,
     facebook_url: contractor.contact.facebookUrl,
+    measurement_system: contractor.measurementSystem,
     primary_color: contractor.branding.primaryColor,
     accent_color: contractor.branding.accentColor,
     hero_label: contractor.branding.heroLabel,
@@ -597,6 +602,7 @@ export const claimOnboardingContext = async (): Promise<OnboardingContext | null
           contractor: {
             id: responseBody.contractor.id,
             slug: responseBody.contractor.slug,
+            measurementSystem: responseBody.contractor.measurement_system ?? "metric",
             branding: {
               primaryColor: responseBody.contractor.primary_color,
               accentColor: responseBody.contractor.accent_color,

@@ -13,6 +13,7 @@ const adminClient = createClient(supabaseUrl, serviceRoleKey);
 const contractorColumns = `
   id,
   slug,
+  measurement_system,
   business_name,
   phone,
   email,
