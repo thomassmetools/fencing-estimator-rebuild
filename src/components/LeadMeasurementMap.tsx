@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, useMap } from "react-leaflet";
-import { hasMapboxAccessToken, mapboxSatelliteTilesUrl, openStreetMapTilesUrl } from "../lib/map-config";
+import { satelliteTilesAttribution, satelliteTilesUrl } from "../lib/map-config";
 import type { LeadRecord } from "../types";
 
 interface LeadMeasurementMapProps {
@@ -35,23 +35,14 @@ export const LeadMeasurementMap = ({ lead }: LeadMeasurementMapProps) => {
     return null;
   }
 
-  const tileUrl = hasMapboxAccessToken ? mapboxSatelliteTilesUrl : openStreetMapTilesUrl;
-  const tileSize = hasMapboxAccessToken ? 512 : 256;
-  const zoomOffset = hasMapboxAccessToken ? -1 : 0;
   const center = lead.measurementPoints[0];
 
   return (
     <div className="lead-map-frame">
       <MapContainer center={[center.lat, center.lng]} zoom={19} scrollWheelZoom={false} className="lead-map">
         <TileLayer
-          attribution={
-            hasMapboxAccessToken
-              ? '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          }
-          url={tileUrl}
-          tileSize={tileSize}
-          zoomOffset={zoomOffset}
+          attribution={satelliteTilesAttribution}
+          url={satelliteTilesUrl}
         />
         <FitLeadBounds lead={lead} />
         {lead.measurementPoints.map((point, index) => (

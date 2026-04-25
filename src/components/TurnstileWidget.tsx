@@ -69,7 +69,7 @@ export const TurnstileWidget = ({ onTokenChange }: TurnstileWidgetProps) => {
   }, [onTokenChange]);
 
   if (!hasTurnstileSiteKey) {
-    return <p className="helper-text">Add a Turnstile site key to enable protected lead submission.</p>;
+    return null;
   }
 
   return <div id={widgetId} ref={containerRef} className="turnstile-frame" />;

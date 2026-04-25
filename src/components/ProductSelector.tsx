@@ -5,9 +5,10 @@ interface ProductSelectorProps {
   products: Product[];
   selectedProducts: SelectedProduct[];
   onSelectionChange: (selectedProducts: SelectedProduct[]) => void;
+  measuredLength: number | null;
 }
 
-export const ProductSelector = ({ products, selectedProducts, onSelectionChange }: ProductSelectorProps) => {
+export const ProductSelector = ({ products, selectedProducts, onSelectionChange, measuredLength }: ProductSelectorProps) => {
   const updateSelection = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       onSelectionChange(selectedProducts.filter((entry) => entry.productId !== productId));
@@ -31,9 +32,13 @@ export const ProductSelector = ({ products, selectedProducts, onSelectionChange 
     <section className="panel panel-stack">
       <div className="panel-header compact">
         <div>
-          <p className="eyebrow">Step 2</p>
-          <h2>Choose products</h2>
-          <p>Keep the selector focused on the products you actually want the customer to ask about.</p>
+          <p className="eyebrow">Fence type</p>
+          <h2>Choose your preferred fence</h2>
+          <p>
+            {measuredLength
+              ? `We have filled lineal metre products with your saved ${measuredLength} m measurement.`
+              : "Save your fence length first, then choose the product you want priced."}
+          </p>
         </div>
       </div>
 
@@ -56,7 +61,7 @@ export const ProductSelector = ({ products, selectedProducts, onSelectionChange 
                 </div>
               </div>
               <label className="quantity-field">
-                <span>Quantity</span>
+                <span>{product.unit === "lineal metre" ? "Length" : "Quantity"}</span>
                 <input
                   type="number"
                   min="0"

@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, useMap } from "react-leaflet";
 import type { LatLngLiteral } from "leaflet";
-import { hasMapboxAccessToken, mapboxAccessToken, mapboxSatelliteTilesUrl, openStreetMapTilesUrl } from "../lib/map-config";
+import {
+  hasMapboxAccessToken,
+  mapboxAccessToken,
+  openStreetMapTilesUrl,
+  satelliteTilesAttribution,
+  satelliteTilesUrl,
+} from "../lib/map-config";
 import type { MapPoint, MeasurementMode, MeasurementResult } from "../types";
 
 interface MapMeasurePanelProps {
@@ -41,7 +47,7 @@ const calculatePolygonArea = (points: LatLngLiteral[]) => {
 };
 
 const formatMeasurement = (mode: MeasurementMode, value: number) => {
-  return mode === "distance" ? `${value.toFixed(1)} m` : `${value.toFixed(1)} m2`;
+  return mode === "distance" ? `${value.toFixed(1)} m` : `${value.toFixed(1)} m²`;
 };
 
 const MapViewController = ({
@@ -79,16 +85,11 @@ const MapViewController = ({
   }, [map, mode, onPointAdded]);
 
   useEffect(() => {
-    if (points.length === 0) {
+    if (points.length < 2) {
       return;
     }
 
     const bounds = points.map((point) => [point.lat, point.lng] as [number, number]);
-    if (bounds.length === 1) {
-      map.flyTo(bounds[0], 19, { duration: 0.6 });
-      return;
-    }
-
     map.fitBounds(bounds, { padding: [30, 30] });
   }, [map, points]);
 
@@ -225,16 +226,16 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
     }
   };
 
-  const activeTilesUrl =
-    mapStyle === "satellite" && hasMapboxAccessToken ? mapboxSatelliteTilesUrl : openStreetMapTilesUrl;
+  const isSatellite = mapStyle === "satellite";
+  const activeTilesUrl = isSatellite ? satelliteTilesUrl : openStreetMapTilesUrl;
 
   return (
     <section className="panel panel-map">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Customer view</p>
-          <h2>Map measure</h2>
-          <p>Search the address, switch to satellite if needed, then click around the property boundary.</p>
+          <p className="eyebrow">Fence length</p>
+          <h2>Measure your fence line</h2>
+          <p>Search the address, then click each corner or end point of the fence.</p>
         </div>
         <div className="segmented-control">
           <button
@@ -246,16 +247,6 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
             }}
           >
             Distance
-          </button>
-          <button
-            type="button"
-            className={mode === "area" ? "active" : ""}
-            onClick={() => {
-              setMode("area");
-              setPoints([]);
-            }}
-          >
-            Area
           </button>
         </div>
       </div>
@@ -287,8 +278,6 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
             type="button"
             className={mapStyle === "satellite" ? "active" : ""}
             onClick={() => setMapStyle("satellite")}
-            disabled={!hasMapboxAccessToken}
-            title={!hasMapboxAccessToken ? "Add a Mapbox token to enable satellite view." : undefined}
           >
             Satellite
           </button>
@@ -315,21 +304,16 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
         </div>
       ) : null}
 
-      {!hasMapboxAccessToken ? (
-        <p className="helper-text">Mapbox token not configured yet, so the map falls back to OpenStreetMap and search is disabled.</p>
-      ) : null}
-
       <div className="map-frame">
         <MapContainer center={defaultCenter} zoom={19} scrollWheelZoom className="leaflet-map">
           <TileLayer
+            key={mapStyle}
             attribution={
-              mapStyle === "satellite" && hasMapboxAccessToken
-                ? '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              isSatellite
+                ? satelliteTilesAttribution
                 : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }
             url={activeTilesUrl}
-            tileSize={mapStyle === "satellite" && hasMapboxAccessToken ? 512 : 256}
-            zoomOffset={mapStyle === "satellite" && hasMapboxAccessToken ? -1 : 0}
           />
           <MapViewController mode={mode} center={mapCenter} points={points} onPointAdded={addPoint} />
           {points.map((point, index) => (
@@ -352,7 +336,7 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
       <div className="map-toolbar">
         <div>
           <strong>{measurement ? formatMeasurement(measurement.mode, measurement.value) : "No measurement yet"}</strong>
-          <p>{points.length} points added. Click more points, then save the result into the quote box.</p>
+          <p>{points.length} points added. Click along the fence line, then save the length for your enquiry.</p>
         </div>
         <div className="action-row">
           <button type="button" onClick={removeLastPoint} disabled={points.length === 0}>
@@ -367,7 +351,7 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
             onClick={() => onMeasurementChange(measurement)}
             disabled={!measurement}
           >
-            Use this measurement
+            Save fence length
           </button>
         </div>
       </div>

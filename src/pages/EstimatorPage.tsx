@@ -30,6 +30,40 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
       .filter((item): item is { product: Product; quantity: number } => Boolean(item));
   }, [contractor, selectedProducts]);
 
+  const autofillLinealProducts = (nextMeasurement: MeasurementResult | null) => {
+    if (!contractor || nextMeasurement?.mode !== "distance") {
+      return;
+    }
+
+    const measuredLength = Math.ceil(nextMeasurement.value);
+    const linealProducts = contractor.products.filter((product) => product.unit === "lineal metre");
+    const preferredProduct = linealProducts.find((product) => product.isFeatured) ?? linealProducts[0];
+
+    if (!preferredProduct || measuredLength <= 0) {
+      return;
+    }
+
+    setSelectedProducts((current) => {
+      const hasLinealSelection = current.some((selection) =>
+        linealProducts.some((product) => product.id === selection.productId),
+      );
+
+      if (!hasLinealSelection) {
+        return [...current, { productId: preferredProduct.id, quantity: measuredLength }];
+      }
+
+      return current.map((selection) => {
+        const product = linealProducts.find((item) => item.id === selection.productId);
+        return product ? { ...selection, quantity: measuredLength } : selection;
+      });
+    });
+  };
+
+  const handleMeasurementChange = (nextMeasurement: MeasurementResult | null) => {
+    setMeasurement(nextMeasurement);
+    autofillLinealProducts(nextMeasurement);
+  };
+
   if (!contractor) {
     return (
       <main className="page-shell not-found-shell">
@@ -74,12 +108,13 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
       </section>
 
       <section className="estimator-grid">
-        <MapMeasurePanel onMeasurementChange={setMeasurement} />
+        <MapMeasurePanel onMeasurementChange={handleMeasurementChange} />
         <aside className="sidebar-stack">
           <ProductSelector
             products={contractor.products}
             selectedProducts={selectedProducts}
             onSelectionChange={setSelectedProducts}
+            measuredLength={measurement?.mode === "distance" ? Math.ceil(measurement.value) : null}
           />
           <ResultComposer
             contractor={contractor}

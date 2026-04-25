@@ -9,23 +9,22 @@ export const HomePage = ({ contractors }: HomePageProps) => {
     <main className="page-shell landing-shell">
       <section className="hero-panel">
         <div className="hero-copy">
-          <p className="eyebrow">Hosted estimator starter</p>
-          <h1>One app, many contractors, ready for Facebook traffic and website embeds.</h1>
+          <p className="eyebrow">Fence estimator</p>
+          <h1>Fast fence enquiries for contractors and customers.</h1>
           <p className="hero-text">
-            This scaffold keeps the public experience focused on measuring, selecting products, and copying a clean
-            result message. Each contractor gets their own branded URL and admin screen.
+            Customers can measure their fence line, choose a product, and send the job details from one branded page.
           </p>
         </div>
         <div className="hero-card">
-          <p className="hero-card-label">Recommended rollout</p>
+          <p className="hero-card-label">How it works</p>
           <ol>
             <li>
-              Use a public route per contractor, like <code>/tasman-fencing</code>.
+              Open a contractor estimator, like <code>/tasman-fencing</code>.
             </li>
             <li>
-              Use <code>/admin/tasman-fencing</code> for product and branding updates.
+              Measure the fence line and choose a product.
             </li>
-            <li>Replace local storage with Supabase once the flows are approved.</li>
+            <li>Send the enquiry so the contractor can follow up.</li>
           </ol>
         </div>
       </section>
@@ -52,8 +51,7 @@ export const HomePage = ({ contractors }: HomePageProps) => {
             <p className="eyebrow">Hosted rollout</p>
             <h2>Next live step</h2>
             <p>
-              Once Supabase is configured, the admin links will require login and the public contractor pages will read
-              live settings from your hosted database.
+              Contractors can update their branding, products, contact details, and enquiry message from the admin area.
             </p>
           </div>
         </div>

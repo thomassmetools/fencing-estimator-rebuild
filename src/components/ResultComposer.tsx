@@ -53,12 +53,17 @@ export const ResultComposer = ({
 
   const submitLead = async () => {
     if (!measurement) {
-      setError("Please save a measurement before submitting the lead.");
+      setError("Please save your fence length before sending the enquiry.");
+      return;
+    }
+
+    if (!customerEmail.trim() && !customerPhone.trim()) {
+      setError("Please enter an email address or phone number so the contractor can reply.");
       return;
     }
 
     if (!turnstileToken) {
-      setError("Please complete the bot check before submitting.");
+      setError("The secure enquiry check is not ready yet. Please try again, or use copy/email instead.");
       return;
     }
 
@@ -89,9 +94,9 @@ export const ResultComposer = ({
     <section className="panel panel-stack">
       <div className="panel-header compact">
         <div>
-          <p className="eyebrow">Step 3</p>
-          <h2>Copy-ready result</h2>
-          <p>Copy the summary if you want, or submit the protected lead directly so the contractor can review it later.</p>
+          <p className="eyebrow">Send enquiry</p>
+          <h2>Your fence enquiry</h2>
+          <p>Check the details below, then send them to the contractor.</p>
         </div>
       </div>
 
@@ -103,11 +108,11 @@ export const ResultComposer = ({
       <div className="contact-form-grid">
         <label className="field-stack">
           <span>Email</span>
-          <input type="email" placeholder="Optional" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} />
+          <input type="email" placeholder="Email or phone required" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} />
         </label>
         <label className="field-stack">
           <span>Phone</span>
-          <input type="tel" placeholder="Optional" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} />
+          <input type="tel" placeholder="Email or phone required" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} />
         </label>
       </div>
 
@@ -134,7 +139,7 @@ export const ResultComposer = ({
           {copyLabel}
         </button>
         <button type="button" onClick={() => void submitLead()} disabled={submitStatus === "saving"}>
-          {submitStatus === "saving" ? "Saving lead..." : submitStatus === "saved" ? "Lead saved" : "Submit protected lead"}
+          {submitStatus === "saving" ? "Sending..." : submitStatus === "saved" ? "Enquiry sent" : "Send enquiry"}
         </button>
         <a href={`mailto:${contractor.contact.email}?subject=Fence%20estimate%20request&body=${encodeURIComponent(message)}`}>
           Email contractor

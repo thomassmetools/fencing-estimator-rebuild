@@ -142,7 +142,7 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
         <div>
           <p className="eyebrow">Contractor admin</p>
           <h1>{contractor.contact.businessName}</h1>
-          <p>Use this screen to manage branding, contact details, products, and the copy-ready message template.</p>
+          <p>Manage branding, contact details, products, and the enquiry message customers send through.</p>
         </div>
         <div className="admin-hero-links">
           <a href={publicUrl} target="_blank" rel="noreferrer">

@@ -8,8 +8,10 @@ export const turnstileSiteKey =
 export const hasMapboxAccessToken = Boolean(mapboxAccessToken);
 export const hasTurnstileSiteKey = Boolean(turnstileSiteKey);
 
-export const mapboxSatelliteTilesUrl = hasMapboxAccessToken
-  ? `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${mapboxAccessToken}`
-  : "";
+export const satelliteTilesUrl =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+
+export const satelliteTilesAttribution =
+  "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community";
 
 export const openStreetMapTilesUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";

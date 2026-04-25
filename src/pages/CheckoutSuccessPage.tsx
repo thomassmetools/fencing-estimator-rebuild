@@ -7,7 +7,7 @@ export const CheckoutSuccessPage = () => {
         <p className="eyebrow">Payment received</p>
         <h1>Your estimator setup is underway</h1>
         <p>
-          We’ve started provisioning your contractor account. The next step is to open the invite email and finish your
+          We've started provisioning your contractor account. The next step is to open the invite email and finish your
           onboarding details.
         </p>
 
@@ -18,7 +18,7 @@ export const CheckoutSuccessPage = () => {
           </div>
           <div>
             <strong>2. Open the setup link</strong>
-            <p>You’ll land on your welcome screen and be guided into onboarding.</p>
+            <p>You'll land on your welcome screen and be guided into onboarding.</p>
           </div>
           <div>
             <strong>3. Finish your branding and products</strong>
@@ -36,7 +36,7 @@ export const CheckoutSuccessPage = () => {
         </div>
 
         <p className="helper-text">
-          If the invite doesn’t arrive within a few minutes, open the login page and use the same checkout email to send
+          If the invite doesn't arrive within a few minutes, open the login page and use the same checkout email to send
           yourself a fresh setup link.
         </p>
       </section>
