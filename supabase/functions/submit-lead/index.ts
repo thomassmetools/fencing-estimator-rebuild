@@ -11,6 +11,7 @@ const turnstileSecretKey = Deno.env.get("TURNSTILE_SECRET_KEY") ?? "";
 const resendApiKey = Deno.env.get("RESEND_API_KEY") ?? "";
 const resendFromEmail = Deno.env.get("RESEND_FROM_EMAIL") ?? "";
 const publicSiteUrl = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://app.tradiestools.co.nz").replace(/\/$/, "");
+const devTurnstileBypass = Deno.env.get("DEV_TURNSTILE_BYPASS") === "true";
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
@@ -123,7 +124,12 @@ Deno.serve(async (request) => {
   try {
     const body = (await request.json()) as LeadPayload;
 
-    if (!turnstileSecretKey) {
+    const origin = request.headers.get("origin") ?? "";
+    const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+    const shouldBypassTurnstile =
+      devTurnstileBypass && isLocalOrigin && body.turnstile_token === "local-dev-bypass";
+
+    if (!turnstileSecretKey && !shouldBypassTurnstile) {
       throw new Error("Turnstile secret key is not configured.");
     }
 
@@ -134,29 +140,31 @@ Deno.serve(async (request) => {
       });
     }
 
-    const ipAddress =
-      request.headers.get("cf-connecting-ip") ??
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "";
+    if (!shouldBypassTurnstile) {
+      const ipAddress =
+        request.headers.get("cf-connecting-ip") ??
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        "";
 
-    const verifyResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        secret: turnstileSecretKey,
-        response: body.turnstile_token,
-        remoteip: ipAddress,
-      }),
-    });
-
-    const verifyPayload = (await verifyResponse.json()) as { success?: boolean };
-    if (!verifyPayload.success) {
-      return new Response(JSON.stringify({ error: "Bot verification failed." }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const verifyResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          secret: turnstileSecretKey,
+          response: body.turnstile_token,
+          remoteip: ipAddress,
+        }),
       });
+
+      const verifyPayload = (await verifyResponse.json()) as { success?: boolean };
+      if (!verifyPayload.success) {
+        return new Response(JSON.stringify({ error: "Bot verification failed." }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     if (!body.contractor_id || !body.message || body.measurement_points.length < 2) {

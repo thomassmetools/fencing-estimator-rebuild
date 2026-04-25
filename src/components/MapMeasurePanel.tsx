@@ -163,15 +163,71 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
     onMeasurementChange(null);
   };
 
-  const searchAddress = async () => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setSearchError(null);
-      return;
+  const searchWithMapbox = async (query: string): Promise<SearchResult[]> => {
+    if (!hasMapboxAccessToken) {
+      return [];
     }
 
-    if (!hasMapboxAccessToken) {
-      setSearchError("Add a Mapbox access token to enable address search.");
+    const response = await fetch(
+      `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(query)}&limit=5&access_token=${mapboxAccessToken}`,
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = (await response.json()) as {
+      features?: Array<{ id: string; properties?: { full_address?: string; name?: string }; geometry?: { coordinates?: [number, number] } }>;
+    };
+
+    return (
+      payload.features?.flatMap((feature) => {
+        const coordinates = feature.geometry?.coordinates;
+        if (!coordinates) {
+          return [];
+        }
+
+        return [
+          {
+            id: feature.id,
+            label: feature.properties?.full_address || feature.properties?.name || query,
+            center: {
+              lng: coordinates[0],
+              lat: coordinates[1],
+            },
+          },
+        ];
+      }) ?? []
+    );
+  };
+
+  const searchWithOpenStreetMap = async (query: string): Promise<SearchResult[]> => {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(query)}`,
+    );
+
+    if (!response.ok) {
+      throw new Error("Address search request failed.");
+    }
+
+    const payload = (await response.json()) as Array<{ place_id: number; display_name: string; lat: string; lon: string }>;
+
+    return payload.map((result) => ({
+      id: `osm-${result.place_id}`,
+      label: result.display_name,
+      center: {
+        lat: Number(result.lat),
+        lng: Number(result.lon),
+      },
+    }));
+  };
+
+  const searchAddress = async () => {
+    const query = searchQuery.trim();
+
+    if (!query) {
+      setSearchResults([]);
+      setSearchError(null);
       return;
     }
 
@@ -179,36 +235,8 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
     setSearchError(null);
 
     try {
-      const response = await fetch(
-        `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(searchQuery)}&limit=5&access_token=${mapboxAccessToken}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("Mapbox search request failed.");
-      }
-
-      const payload = (await response.json()) as {
-        features?: Array<{ id: string; properties?: { full_address?: string; name?: string }; geometry?: { coordinates?: [number, number] } }>;
-      };
-
-      const nextResults =
-        payload.features?.flatMap((feature) => {
-          const coordinates = feature.geometry?.coordinates;
-          if (!coordinates) {
-            return [];
-          }
-
-          return [
-            {
-              id: feature.id,
-              label: feature.properties?.full_address || feature.properties?.name || searchQuery,
-              center: {
-                lng: coordinates[0],
-                lat: coordinates[1],
-              },
-            },
-          ];
-        }) ?? [];
+      const mapboxResults = await searchWithMapbox(query);
+      const nextResults = mapboxResults.length > 0 ? mapboxResults : await searchWithOpenStreetMap(query);
 
       setSearchResults(nextResults);
       if (nextResults.length === 0) {
@@ -253,7 +281,7 @@ export const MapMeasurePanel = ({ onMeasurementChange }: MapMeasurePanelProps) =
           <span>Address search</span>
           <input
             type="text"
-            placeholder="Search with Mapbox"
+            placeholder="Search address"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             onKeyDown={(event) => {

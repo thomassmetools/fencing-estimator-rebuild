@@ -4,6 +4,8 @@ export const mapboxAccessToken =
 
 export const turnstileSiteKey =
   import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAAC6NdHns6MZVXgFh";
+export const isLocalTurnstileBypassEnabled =
+  Boolean(import.meta.env.DEV) && import.meta.env.VITE_TURNSTILE_BYPASS === "true";
 
 export const hasMapboxAccessToken = Boolean(mapboxAccessToken);
 export const hasTurnstileSiteKey = Boolean(turnstileSiteKey);

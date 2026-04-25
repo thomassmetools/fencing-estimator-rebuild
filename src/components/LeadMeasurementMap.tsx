@@ -11,6 +11,10 @@ const FitLeadBounds = ({ lead }: LeadMeasurementMapProps) => {
   const map = useMap();
 
   useEffect(() => {
+    window.setTimeout(() => {
+      map.invalidateSize();
+    }, 0);
+
     if (lead.measurementPoints.length === 0) {
       return;
     }
@@ -32,7 +36,7 @@ const FitLeadBounds = ({ lead }: LeadMeasurementMapProps) => {
 
 export const LeadMeasurementMap = ({ lead }: LeadMeasurementMapProps) => {
   if (lead.measurementPoints.length === 0) {
-    return null;
+    return <p className="helper-text">No saved map points for this lead.</p>;
   }
 
   const center = lead.measurementPoints[0];

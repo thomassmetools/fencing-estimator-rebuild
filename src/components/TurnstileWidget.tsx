@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from "react";
-import { hasTurnstileSiteKey, turnstileSiteKey } from "../lib/map-config";
+import { hasTurnstileSiteKey, isLocalTurnstileBypassEnabled, turnstileSiteKey } from "../lib/map-config";
 
 declare global {
   interface Window {
@@ -30,7 +30,13 @@ export const TurnstileWidget = ({ onTokenChange }: TurnstileWidgetProps) => {
   const widgetId = useId();
 
   useEffect(() => {
-    if (!hasTurnstileSiteKey || !containerRef.current) {
+    if (isLocalTurnstileBypassEnabled) {
+      onTokenChange("local-dev-bypass");
+    }
+  }, [onTokenChange]);
+
+  useEffect(() => {
+    if (isLocalTurnstileBypassEnabled || !hasTurnstileSiteKey || !containerRef.current) {
       return;
     }
 
@@ -67,6 +73,10 @@ export const TurnstileWidget = ({ onTokenChange }: TurnstileWidgetProps) => {
     script.addEventListener("load", renderWidget, { once: true });
     document.head.appendChild(script);
   }, [onTokenChange]);
+
+  if (isLocalTurnstileBypassEnabled) {
+    return <p className="helper-text">Local test mode: secure enquiry check bypassed.</p>;
+  }
 
   if (!hasTurnstileSiteKey) {
     return null;

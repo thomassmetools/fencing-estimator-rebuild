@@ -308,7 +308,26 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
                               ) : null}
                             </div>
                           </div>
-                          <LeadMeasurementMap lead={lead} />
+                          <div className="lead-map-section">
+                            <div>
+                              <h3>Map points</h3>
+                              <p className="helper-text">
+                                {lead.measurementPoints.length > 0
+                                  ? `${lead.measurementPoints.length} saved points from the customer measurement.`
+                                  : "No map points were saved with this lead."}
+                              </p>
+                            </div>
+                            {lead.measurementPoints.length > 0 ? (
+                              <ol className="lead-points-list">
+                                {lead.measurementPoints.map((point, index) => (
+                                  <li key={`${lead.id}-point-${index}`}>
+                                    {index + 1}. {point.lat.toFixed(6)}, {point.lng.toFixed(6)}
+                                  </li>
+                                ))}
+                              </ol>
+                            ) : null}
+                            <LeadMeasurementMap lead={lead} />
+                          </div>
                         </td>
                       </tr>
                     ) : null}
