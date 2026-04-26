@@ -12,124 +12,153 @@ export const HomePage = ({ contractors }: HomePageProps) => {
       <section className="landing-nav">
         <div className="nav-brand">
           <p className="eyebrow">Tradies Tools</p>
-          <strong>Fence Estimator Package</strong>
+          <strong>More quotes. Less wasted measuring.</strong>
         </div>
         <div className="landing-nav-actions">
           <a className="button-link" href="/admin">
             Contractor login
-          </a>
-          <a className="button-link primary" href={stripeCheckoutUrl} target="_self" rel="noreferrer">
-            Buy now
           </a>
         </div>
       </section>
 
       <section className="hero-panel landing-hero">
         <div className="hero-copy landing-copy">
-          <p className="eyebrow">Built for fence contractors</p>
-          <h1>Turn Facebook messages and quote requests into measured fence leads.</h1>
+          <p className="eyebrow">For small fencing contractors</p>
+          <h1>Stop wasting time driving out to measure jobs that do not convert.</h1>
           <p className="hero-text">
-            Sell a hosted estimator your customers can use on their phone, then manage branding, products, and incoming
-            enquiries from one admin portal.
+            Let customers measure the fence line first. See the job size before you quote. Filter out time-wasters and
+            get to the good jobs faster.
           </p>
-          <div className="hero-points">
-            <div>
-              <strong>Customers self-measure</strong>
-              <p>They map the fence line, choose a product, and send the job details in minutes.</p>
-            </div>
-            <div>
-              <strong>You stay on-brand</strong>
-              <p>Each contractor gets a branded estimator page and admin area ready to share.</p>
-            </div>
-            <div>
-              <strong>You close faster</strong>
-              <p>Leads arrive with measurements, contact details, and product context already attached.</p>
-            </div>
+
+          <div className="hero-checklist">
+            <p>Know job size before you quote</p>
+            <p>Reduce wasted site visits</p>
+            <p>Reply faster with better leads</p>
           </div>
-          <div className="action-row">
+
+          <p className="hero-support-text">
+            Customers send the measurement, product selected, and contact details before you quote.
+          </p>
+
+          <div className="price-strip">
+            <strong>$7.50/month</strong>
+            <span>No contracts</span>
+          </div>
+
+          <div className="action-row hero-actions">
             <a className="button-link primary" href={stripeCheckoutUrl} target="_self" rel="noreferrer">
-              Purchase the package
+              Start for $7.50/month
             </a>
             <a className="button-link" href="/admin">
-              Already a customer? Log in
+              Already a customer? Contractor login
             </a>
           </div>
+
           <p className="helper-text">
             {contractors.length > 0
-              ? `${contractors.length} estimator workspace${contractors.length === 1 ? "" : "s"} currently available in this environment.`
-              : "Your estimator is provisioned after purchase and finished during onboarding."}
+              ? `${contractors.length} contractor workspace${contractors.length === 1 ? "" : "s"} currently active in this environment.`
+              : "After checkout, you get your own customer page and contractor admin login."}
           </p>
         </div>
-        <div className="hero-card pricing-card">
-          <p className="hero-card-label">Package CTA</p>
-          <h2>Hosted fence estimator</h2>
-          <p>
-            One purchase gets the contractor portal, onboarding flow, branded public estimator, and lead capture setup.
+
+        <div className="hero-card demo-card">
+          <p className="hero-card-label">What the customer sends you</p>
+          <div className="map-demo">
+            <div className="map-demo-grid" aria-hidden="true">
+              <span className="map-line map-line-a" />
+              <span className="map-line map-line-b" />
+              <span className="map-point map-point-a" />
+              <span className="map-point map-point-b" />
+              <span className="map-point map-point-c" />
+            </div>
+            <div className="map-demo-card">
+              <strong>Fence run measured</strong>
+              <p>32.4m boundary line</p>
+            </div>
+            <div className="map-demo-card">
+              <strong>Customer ready to quote</strong>
+              <p>Contact details, product selected, and site notes included</p>
+            </div>
+          </div>
+          <p className="helper-text hero-card-note">
+            Customers measure it on the map before they ask you to quote.
           </p>
-          <ul className="feature-list">
-            <li>Hosted customer estimator page</li>
-            <li>Contractor admin portal</li>
-            <li>Lead capture with measurements</li>
-            <li>Branding and product setup</li>
-          </ul>
-          <a className="button-link primary full-width-button" href={stripeCheckoutUrl} target="_self" rel="noreferrer">
-            Buy through Stripe
-          </a>
-          <p className="helper-text">Checkout is handled securely by Stripe.</p>
         </div>
       </section>
 
       <section className="value-grid">
-        <article className="panel">
-          <p className="eyebrow">What customers do</p>
-          <h2>Measure, choose, submit</h2>
-          <p className="helper-text">
-            Customers open the estimator, draw the fence line on the map, select a fence option, and send the lead.
-          </p>
+        <article className="panel value-panel">
+          <p className="eyebrow">Step 1</p>
+          <h2>Share your link</h2>
+          <p className="helper-text">Post it on Facebook, send it in Messenger, or add it to your website.</p>
         </article>
-        <article className="panel">
-          <p className="eyebrow">What contractors get</p>
-          <h2>One place to manage everything</h2>
-          <p className="helper-text">
-            Update products, branding, messaging, and review fresh leads from a simple admin workspace.
-          </p>
+        <article className="panel value-panel">
+          <p className="eyebrow">Step 2</p>
+          <h2>Let customers measure it</h2>
+          <p className="helper-text">They map the fence line and send through the size before you spend time on it.</p>
         </article>
-        <article className="panel">
-          <p className="eyebrow">How it goes live</p>
-          <h2>Checkout to onboarding</h2>
-          <p className="helper-text">
-            Purchase through Stripe, finish setup, and start sharing the estimator link across Facebook and your website.
-          </p>
+        <article className="panel value-panel">
+          <p className="eyebrow">Step 3</p>
+          <h2>Quote faster</h2>
+          <p className="helper-text">You get the job size first, so you can decide who is worth following up.</p>
         </article>
+      </section>
+
+      <section className="proof-strip">
+        <article className="proof-card">
+          <strong>Built for owner-operators</strong>
+          <p>No big system to learn. Just a simple way to pre-qualify fencing jobs.</p>
+        </article>
+        <article className="proof-card">
+          <strong>Simple monthly pricing</strong>
+          <p>$7.50/month with no contract makes it an easy yes for small contractors.</p>
+        </article>
+        <article className="proof-card">
+          <strong>One clear action</strong>
+          <p>Buy it, get set up, and start using it in your Facebook and Messenger replies.</p>
+        </article>
+      </section>
+
+      <section className="panel cta-panel">
+        <div>
+          <p className="eyebrow">Stop wasting time measuring every job</p>
+          <h2>Start for $7.50/month</h2>
+          <p className="helper-text">
+            Use it to filter out time-wasters, cut down site visits, and see job size before you quote.
+          </p>
+          <p className="helper-text">
+            Each enquiry includes the measurement, product selected, and customer contact details.
+          </p>
+        </div>
+        <a className="button-link primary cta-button" href={stripeCheckoutUrl} target="_self" rel="noreferrer">
+          Buy now through Stripe
+        </a>
       </section>
 
       <section className="panel helper-panel portal-section">
         <div className="panel-header compact portal-header-row">
           <div>
             <p className="eyebrow">Contractor access</p>
-            <h2>Make admin portals easy to find</h2>
-            <p>
-              Keep the landing page focused on buying, then give existing customers one obvious path into admin.
-            </p>
+            <h2>Easy admin login</h2>
+            <p>Keep the sales page focused on buying. Existing customers can use the contractor login button.</p>
           </div>
         </div>
         <div className="portal-plan-grid">
           <article className="portal-plan-card">
-            <strong>Best default</strong>
-            <p>Use a clear “Contractor login” button in the header and route it to `/admin`.</p>
+            <strong>Best option</strong>
+            <p>Use a clear contractor login link, not a big login form on the homepage.</p>
           </article>
           <article className="portal-plan-card">
-            <strong>What happens next</strong>
-            <p>After sign-in, contractors now land on their own portal picker instead of needing to remember a slug.</p>
+            <strong>What they see</strong>
+            <p>After sign-in, they land on their own admin portal or choose from the accounts linked to that email.</p>
           </article>
           <article className="portal-plan-card">
-            <strong>Why not a homepage login box</strong>
-            <p>A visible login button is cleaner for conversion and keeps the public page focused on the purchase CTA.</p>
+            <strong>Why it works</strong>
+            <p>It keeps the page simple for buyers and still makes admin access easy for existing customers.</p>
           </article>
         </div>
         <div className="card-links">
-          <a href="/admin">Open contractor login</a>
-          <a href="/portal">Open portal finder</a>
+          <a href="/admin">Contractor login</a>
         </div>
       </section>
     </main>
