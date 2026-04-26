@@ -59,7 +59,7 @@ button:disabled {
 }
 
 .page-shell {
-  width: min(1280px, calc(100% - 32px));
+  width: min(1360px, calc(100% - 32px));
   margin: 0 auto;
   padding: 32px 0 48px;
 }
@@ -449,12 +449,11 @@ a.primary,
 .brand-banner::after {
   content: "";
   position: absolute;
-  inset: auto -30px -50px auto;
-  width: 220px;
-  height: 220px;
-  border-radius: 999px;
-  background: radial-gradient(circle, var(--brand-accent), transparent 70%);
-  opacity: 0.34;
+  inset: 0 0 0 auto;
+  width: 8px;
+  height: 100%;
+  background: var(--brand-accent);
+  opacity: 1;
 }
 
 .contact-panel {
@@ -470,7 +469,7 @@ a.primary,
 }
 
 .estimator-grid {
-  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.95fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.95fr);
   align-items: start;
 }
 
@@ -488,6 +487,7 @@ a.primary,
   border-radius: 8px;
   padding: 12px 14px;
   background: var(--surface-strong);
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
 .estimator-steps span {
@@ -501,11 +501,26 @@ a.primary,
   font-weight: 700;
 }
 
+.estimator-steps .is-active {
+  border-color: var(--brand-dark);
+  background: color-mix(in srgb, var(--brand-accent) 14%, var(--surface-strong));
+  box-shadow: inset 0 0 0 1px rgba(11, 31, 26, 0.06);
+}
+
+.estimator-steps .is-active span {
+  background: var(--brand-dark);
+}
+
 .sidebar-stack,
 .panel-stack,
 .admin-product-list {
   display: grid;
   gap: 16px;
+}
+
+.sidebar-stack {
+  position: sticky;
+  top: 20px;
 }
 
 .panel-header {
@@ -521,18 +536,18 @@ a.primary,
 }
 
 .panel-map {
-  min-height: 720px;
+  min-height: auto;
 }
 
 .map-frame {
   overflow: hidden;
   border-radius: 18px;
   border: 1px solid var(--line);
-  min-height: 520px;
+  min-height: clamp(420px, 58vh, 760px);
 }
 
 .leaflet-map {
-  min-height: 520px;
+  min-height: clamp(420px, 58vh, 760px);
   height: 100%;
 }
 
@@ -1005,7 +1020,6 @@ select {
   .hero-panel,
   .brand-banner,
   .admin-hero,
-  .estimator-grid,
   .admin-grid,
   .value-grid,
   .portal-plan-grid,
@@ -1028,9 +1042,15 @@ select {
   }
 }
 
+@media (max-width: 1120px) {
+  .estimator-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.9fr);
+  }
+}
+
 @media (max-width: 720px) {
   .page-shell {
-    width: min(100% - 20px, 1280px);
+    width: min(100% - 20px, 1360px);
     padding-top: 20px;
   }
 
@@ -1077,7 +1097,7 @@ select {
 
   .map-frame,
   .leaflet-map {
-    min-height: 420px;
+    min-height: clamp(320px, 48vh, 500px);
   }
 
   .panel-map {
@@ -1117,5 +1137,16 @@ select {
   .lead-meta-grid,
   .lead-detail-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .estimator-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-stack {
+    position: static;
+    top: auto;
   }
 }

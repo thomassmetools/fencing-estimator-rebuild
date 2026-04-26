@@ -88,6 +88,9 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
   const primaryColor = contractor.branding.primaryColor || "#1d4f41";
   const accentColor = contractor.branding.accentColor || "#d8a64f";
   const hasFacebookUrl = contractor.contact.facebookUrl.trim().length > 0;
+  const hasMeasurement = Boolean(measurement);
+  const hasSelectedProducts = selectedProducts.length > 0;
+  const activeStep = !hasMeasurement ? 1 : !hasSelectedProducts ? 2 : 3;
 
   return (
     <main
@@ -117,15 +120,15 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
       </section>
 
       <section className="estimator-steps" aria-label="Estimator steps">
-        <div>
+        <div className={activeStep === 1 ? "is-active" : ""} aria-current={activeStep === 1 ? "step" : undefined}>
           <span>1</span>
           <strong>Measure</strong>
         </div>
-        <div>
+        <div className={activeStep === 2 ? "is-active" : ""} aria-current={activeStep === 2 ? "step" : undefined}>
           <span>2</span>
           <strong>Choose</strong>
         </div>
-        <div>
+        <div className={activeStep === 3 ? "is-active" : ""} aria-current={activeStep === 3 ? "step" : undefined}>
           <span>3</span>
           <strong>Send</strong>
         </div>
