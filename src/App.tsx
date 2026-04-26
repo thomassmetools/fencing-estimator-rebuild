@@ -4,6 +4,7 @@ import { useContractorStore } from "./hooks/useContractorStore";
 
 const HomePage = lazy(() => import("./pages/HomePage").then((module) => ({ default: module.HomePage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then((module) => ({ default: module.LoginPage })));
+const AdminHomePage = lazy(() => import("./pages/AdminHomePage").then((module) => ({ default: module.AdminHomePage })));
 const CheckoutSuccessPage = lazy(() =>
   import("./pages/CheckoutSuccessPage").then((module) => ({ default: module.CheckoutSuccessPage })),
 );
@@ -55,13 +56,11 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage contractors={contractors} />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/portal" element={<Navigate to="/admin" replace />} />
         <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
-        <Route
-          path="/admin"
-          element={contractors[0] ? <Navigate to={`/admin/${contractors[0].slug}`} replace /> : <NotFoundPage />}
-        />
+        <Route path="/admin" element={<AdminHomePage />} />
         <Route path="/admin/:slug" element={<AdminPage refreshPublicContractors={refresh} />} />
         <Route path="/:slug" element={<EstimatorPage contractorMap={contractorMap} />} />
         <Route path="*" element={<NotFoundPage />} />

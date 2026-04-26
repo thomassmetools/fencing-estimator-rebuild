@@ -1,6 +1,7 @@
 import { seedContractors } from "../data/seed";
 import { getSupabaseAnonKey, getSupabaseClient, getSupabaseUrl, isSupabaseConfigured } from "./supabase";
 import type {
+  AdminAccessRecord,
   ContractorRecord,
   LeadStatus,
   LeadRecord,
@@ -86,6 +87,15 @@ type OnboardingRow = {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type AdminAccessRow = {
+  contractor_id: string;
+  contractors: {
+    slug: string;
+    business_name: string;
+    hero_label: string;
+  }[] | null;
 };
 
 const contractorColumns = `
@@ -326,6 +336,32 @@ export const fetchAdminContractor = async (slug: string, authUserId: string): Pr
 
   const products = await fetchProductsForContractors([contractorRow.id]);
   return mapContractor(contractorRow as ContractorRow, products);
+};
+
+export const fetchAdminAccessRecords = async (authUserId: string): Promise<AdminAccessRecord[]> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("contractor_users")
+    .select("contractor_id, contractors!inner(slug, business_name, hero_label)")
+    .eq("auth_user_id", authUserId);
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as AdminAccessRow[])
+    .filter((row) => Boolean(row.contractors?.[0]))
+    .map((row) => ({
+      contractorId: row.contractor_id,
+      slug: row.contractors?.[0]?.slug ?? "",
+      businessName: row.contractors?.[0]?.business_name ?? "Contractor account",
+      heroLabel: row.contractors?.[0]?.hero_label ?? "",
+    }))
+    .sort((left, right) => left.businessName.localeCompare(right.businessName));
 };
 
 export const updateContractorSettings = async (contractor: ContractorRecord) => {

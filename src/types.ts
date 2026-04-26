@@ -48,6 +48,13 @@ export interface ContractorRecord {
   products: Product[];
 }
 
+export interface AdminAccessRecord {
+  contractorId: string;
+  slug: string;
+  businessName: string;
+  heroLabel: string;
+}
+
 export interface MeasurementResult {
   mode: MeasurementMode;
   value: number;

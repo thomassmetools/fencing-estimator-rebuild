@@ -63,11 +63,116 @@ button:disabled {
 }
 
 .landing-shell,
+.admin-home-shell,
 .admin-shell,
 .estimator-shell,
 .auth-shell {
   display: grid;
   gap: 24px;
+}
+
+.landing-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-brand {
+  display: grid;
+  gap: 4px;
+}
+
+.landing-nav-actions,
+.hero-points,
+.value-grid,
+.portal-grid,
+.portal-plan-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.landing-nav-actions {
+  grid-auto-flow: column;
+  align-items: center;
+}
+
+.landing-hero {
+  align-items: start;
+}
+
+.landing-copy {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-copy::after {
+  content: "";
+  position: absolute;
+  inset: auto -80px -100px auto;
+  width: 240px;
+  height: 240px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(216, 166, 79, 0.28), transparent 68%);
+}
+
+.hero-points {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 28px 0;
+}
+
+.hero-points div,
+.portal-card,
+.portal-plan-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.hero-points p,
+.portal-card p,
+.portal-plan-card p {
+  margin-bottom: 0;
+  color: var(--ink-soft);
+}
+
+.pricing-card {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.feature-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.full-width-button {
+  width: 100%;
+  justify-content: center;
+  display: inline-flex;
+}
+
+.value-grid,
+.portal-plan-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.portal-header,
+.portal-card {
+  display: grid;
+  gap: 16px;
+}
+
+.portal-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.portal-header-row {
+  margin-bottom: 18px;
 }
 
 .hero-panel,
@@ -793,7 +898,13 @@ select {
   .brand-banner,
   .admin-hero,
   .estimator-grid,
-  .admin-grid {
+  .admin-grid,
+  .value-grid,
+  .portal-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-points {
     grid-template-columns: 1fr;
   }
 
@@ -815,6 +926,12 @@ select {
   .page-shell {
     width: min(100% - 20px, 1280px);
     padding-top: 20px;
+  }
+
+  .landing-nav,
+  .landing-nav-actions {
+    grid-auto-flow: row;
+    justify-content: stretch;
   }
 
   .hero-copy,
@@ -846,7 +963,8 @@ select {
 
   .map-search-bar,
   .map-toolbar,
-  .action-row.stretch {
+  .action-row.stretch,
+  .landing-nav-actions {
     display: grid;
     grid-template-columns: 1fr;
   }
