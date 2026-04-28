@@ -77,6 +77,7 @@ export interface LeadRecord {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerAddress: string;
   message: string;
   measurementMode: MeasurementMode | null;
   measurementValue: number | null;

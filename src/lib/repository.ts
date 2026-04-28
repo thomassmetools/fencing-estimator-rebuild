@@ -49,6 +49,7 @@ type LeadRow = {
   customer_name: string;
   customer_email: string;
   customer_phone: string;
+  customer_address: string;
   message: string;
   measurement_mode: "distance" | "area" | null;
   measurement_value: number | null;
@@ -134,6 +135,7 @@ const leadColumns = `
   customer_name,
   customer_email,
   customer_phone,
+  customer_address,
   message,
   measurement_mode,
   measurement_value,
@@ -212,6 +214,7 @@ const mapLead = (row: LeadRow): LeadRecord => ({
   customerName: row.customer_name,
   customerEmail: row.customer_email,
   customerPhone: row.customer_phone,
+  customerAddress: row.customer_address ?? "",
   message: row.message,
   measurementMode: row.measurement_mode,
   measurementValue: row.measurement_value,
@@ -459,6 +462,7 @@ export const submitLeadEvent = async ({
   customerName,
   customerEmail,
   customerPhone,
+  customerAddress,
   message,
   measurement,
   estimatedTotal,
@@ -469,6 +473,7 @@ export const submitLeadEvent = async ({
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerAddress: string;
   message: string;
   measurement: MeasurementResult | null;
   estimatedTotal: number | null;
@@ -488,6 +493,7 @@ export const submitLeadEvent = async ({
     customer_name: customerName,
     customer_email: customerEmail,
     customer_phone: customerPhone,
+    customer_address: customerAddress,
     message,
     measurement_mode: measurement?.mode ?? null,
     measurement_value: measurement?.value ?? null,

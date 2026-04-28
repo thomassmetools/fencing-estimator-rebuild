@@ -6,9 +6,20 @@ interface ProductSelectorProps {
   selectedProducts: SelectedProduct[];
   onSelectionChange: (selectedProducts: SelectedProduct[]) => void;
   measuredLengthLabel: string | null;
+  measuredProductId: string | null;
+  onMeasuredProductChange: (productId: string | null) => void;
+  canApplyMeasurement: boolean;
 }
 
-export const ProductSelector = ({ products, selectedProducts, onSelectionChange, measuredLengthLabel }: ProductSelectorProps) => {
+export const ProductSelector = ({
+  products,
+  selectedProducts,
+  onSelectionChange,
+  measuredLengthLabel,
+  measuredProductId,
+  onMeasuredProductChange,
+  canApplyMeasurement,
+}: ProductSelectorProps) => {
   const updateSelection = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       onSelectionChange(selectedProducts.filter((entry) => entry.productId !== productId));
@@ -60,6 +71,17 @@ export const ProductSelector = ({ products, selectedProducts, onSelectionChange,
                   <span>{quantity > 0 ? `Subtotal ${currency.format(estimateProductSubtotal(product, quantity))}` : "Not selected"}</span>
                 </div>
               </div>
+              {product.unit === "lineal metre" || product.unit === "lineal foot" ? (
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={measuredProductId === product.id}
+                    disabled={!canApplyMeasurement}
+                    onChange={(event) => onMeasuredProductChange(event.target.checked ? product.id : null)}
+                  />
+                  <span>{canApplyMeasurement ? "Use saved measurement for this item" : "Save a measurement first"}</span>
+                </label>
+              ) : null}
               <label className="quantity-field">
                 <span>{product.unit === "lineal metre" || product.unit === "lineal foot" ? "Length" : "Quantity"}</span>
                 <input

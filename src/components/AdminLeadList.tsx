@@ -50,6 +50,19 @@ const contactSummary = (lead: LeadRecord) => {
   return lead.customerEmail || lead.customerPhone || "No contact";
 };
 
+const buildMapLink = (lead: LeadRecord) => {
+  if (lead.customerAddress.trim()) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.customerAddress.trim())}`;
+  }
+
+  const point = lead.measurementPoints[0];
+  if (!point) {
+    return null;
+  }
+
+  return `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`;
+};
+
 export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead }: AdminLeadListProps) => {
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -79,6 +92,7 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
         lead.customerName,
         lead.customerEmail,
         lead.customerPhone,
+        lead.customerAddress,
         lead.message,
         lead.selectedProductsSummary.join(" "),
       ]
@@ -221,6 +235,7 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
                 const isExpanded = expandedLeadId === lead.id;
                 const notesValue = notesDrafts[lead.id] ?? lead.internalNotes;
                 const isSaving = savingLeadId === lead.id;
+                const mapLink = buildMapLink(lead);
 
                 return (
                   <Fragment key={lead.id}>
@@ -281,6 +296,7 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
                           <div className="lead-detail-grid">
                             <div>
                               <h3>Lead details</h3>
+                              {lead.customerAddress ? <p className="helper-text">Site address: {lead.customerAddress}</p> : null}
                               {lead.selectedProductsSummary.length > 0 ? (
                                 <p className="helper-text">{lead.selectedProductsSummary.join(" | ")}</p>
                               ) : (
@@ -302,6 +318,7 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
                                 </button>
                                 {lead.customerEmail ? <a href={`mailto:${lead.customerEmail}`}>Email</a> : null}
                                 {lead.customerPhone ? <a href={`tel:${lead.customerPhone}`}>Call</a> : null}
+                                {mapLink ? <a href={mapLink} target="_blank" rel="noreferrer">Open map</a> : null}
                               </div>
                               {lead.lastContactedAt ? (
                                 <p className="helper-text">Last contacted {formatDateTime(lead.lastContactedAt)}</p>

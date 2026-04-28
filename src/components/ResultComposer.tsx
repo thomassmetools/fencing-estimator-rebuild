@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TurnstileWidget } from "./TurnstileWidget";
 import { buildResultMessage, currency, estimateProductSubtotal } from "../lib/estimate";
 import { submitLeadEvent } from "../lib/repository";
@@ -9,7 +9,9 @@ interface ResultComposerProps {
   measurement: MeasurementResult | null;
   selectedProducts: Array<{ product: Product; quantity: number }>;
   customerName: string;
+  customerAddress: string;
   onCustomerNameChange: (value: string) => void;
+  onCustomerAddressChange: (value: string) => void;
 }
 
 export const ResultComposer = ({
@@ -17,7 +19,9 @@ export const ResultComposer = ({
   measurement,
   selectedProducts,
   customerName,
+  customerAddress,
   onCustomerNameChange,
+  onCustomerAddressChange,
 }: ResultComposerProps) => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -35,7 +39,7 @@ export const ResultComposer = ({
     return selectedProducts.map(({ product, quantity }) => `${product.name}: ${quantity} ${product.unit}`);
   }, [selectedProducts]);
 
-  const message = useMemo(() => {
+  const generatedMessage = useMemo(() => {
     return buildResultMessage({
       businessName: contractor.contact.businessName,
       openingLine: contractor.resultTemplate.openingLine,
@@ -43,8 +47,21 @@ export const ResultComposer = ({
       measurement,
       selectedProducts,
       customerName,
+      customerAddress,
+      siteAccess: "Easy access",
+      oldFenceRemoval: "No old fence to remove",
+      projectTiming: "Within the next month",
+      siteNotes: "Add any gate width, slope, retaining walls, awkward corners, or boundary notes here.",
     });
-  }, [contractor, customerName, measurement, selectedProducts]);
+  }, [contractor, customerAddress, customerName, measurement, selectedProducts]);
+  const [message, setMessage] = useState(generatedMessage);
+  const [hasEditedMessage, setHasEditedMessage] = useState(false);
+
+  useEffect(() => {
+    if (!hasEditedMessage) {
+      setMessage(generatedMessage);
+    }
+  }, [generatedMessage, hasEditedMessage]);
 
   const copyMessage = async () => {
     await navigator.clipboard.writeText(message);
@@ -55,6 +72,11 @@ export const ResultComposer = ({
   const submitLead = async () => {
     if (!customerName.trim()) {
       setError("Please enter your name so the contractor knows who to contact.");
+      return;
+    }
+
+    if (!customerAddress.trim()) {
+      setError("Please enter the fence site address so the contractor knows where the job is located.");
       return;
     }
 
@@ -81,6 +103,7 @@ export const ResultComposer = ({
         customerName,
         customerEmail,
         customerPhone,
+        customerAddress,
         message,
         measurement,
         estimatedTotal: estimatedTotal || null,
@@ -91,6 +114,9 @@ export const ResultComposer = ({
       setCustomerEmail("");
       setCustomerPhone("");
       onCustomerNameChange("");
+      onCustomerAddressChange("");
+      setMessage(generatedMessage);
+      setHasEditedMessage(false);
       setTurnstileToken("");
       setTurnstileNonce((current) => current + 1);
     } catch (leadError) {
@@ -117,6 +143,19 @@ export const ResultComposer = ({
           value={customerName}
           onChange={(event) => {
             onCustomerNameChange(event.target.value);
+            setError(null);
+          }}
+        />
+      </label>
+
+      <label className="field-stack">
+        <span>Fence site address</span>
+        <input
+          type="text"
+          placeholder="Required"
+          value={customerAddress}
+          onChange={(event) => {
+            onCustomerAddressChange(event.target.value);
             setError(null);
           }}
         />
@@ -164,7 +203,14 @@ export const ResultComposer = ({
         </div>
       </div>
 
-      <textarea className="result-area" value={message} readOnly />
+      <textarea
+        className="result-area"
+        value={message}
+        onChange={(event) => {
+          setMessage(event.target.value);
+          setHasEditedMessage(true);
+        }}
+      />
       {submitStatus === "saved" ? (
         <div className="success-panel">
           <strong>Enquiry sent.</strong>

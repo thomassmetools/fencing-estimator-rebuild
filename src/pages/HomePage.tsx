@@ -4,7 +4,7 @@ interface HomePageProps {
   contractors: ContractorRecord[];
 }
 
-const stripeCheckoutUrl = "https://buy.stripe.com/test_7sYcN7aYNcXYdK4f6l9bO02";
+const stripeCheckoutUrl = "https://buy.stripe.com/7sY7sM84R53m1D91sSdAk00";
 
 export const HomePage = ({ contractors }: HomePageProps) => {
   return (

@@ -20,6 +20,7 @@ interface LeadPayload {
   customer_name: string;
   customer_email: string;
   customer_phone: string;
+  customer_address: string;
   message: string;
   measurement_mode: "distance" | "area" | null;
   measurement_value: number | null;
@@ -38,6 +39,7 @@ const sendLeadNotification = async ({
   customerName,
   customerEmail,
   customerPhone,
+  customerAddress,
   message,
   measurementMode,
   measurementValue,
@@ -51,6 +53,7 @@ const sendLeadNotification = async ({
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerAddress: string;
   message: string;
   measurementMode: "distance" | "area" | null;
   measurementValue: number | null;
@@ -85,6 +88,7 @@ const sendLeadNotification = async ({
     "--------",
     `Name: ${customerName || "Not provided"}`,
     `Contact: ${contactLine}`,
+    `Site address: ${customerAddress || "Not provided"}`,
     "",
     "Project",
     "-------",
@@ -193,6 +197,13 @@ Deno.serve(async (request) => {
       });
     }
 
+    if (!body.customer_address?.trim()) {
+      return new Response(JSON.stringify({ error: "Customer address is required." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: contractor, error: contractorError } = await supabase
       .from("contractors")
       .select("id, is_published, business_name, email, slug")
@@ -229,6 +240,7 @@ Deno.serve(async (request) => {
       customer_name: body.customer_name ?? "",
       customer_email: body.customer_email ?? "",
       customer_phone: body.customer_phone ?? "",
+      customer_address: body.customer_address ?? "",
       message: body.message,
       measurement_mode: body.measurement_mode,
       measurement_value: body.measurement_value,
@@ -248,6 +260,7 @@ Deno.serve(async (request) => {
         customer_name,
         customer_email,
         customer_phone,
+        customer_address,
         message,
         measurement_mode,
         measurement_value,
@@ -278,6 +291,7 @@ Deno.serve(async (request) => {
         customerName: body.customer_name ?? "",
         customerEmail: body.customer_email ?? "",
         customerPhone: body.customer_phone ?? "",
+        customerAddress: body.customer_address ?? "",
         message: body.message,
         measurementMode: body.measurement_mode,
         measurementValue: body.measurement_value,

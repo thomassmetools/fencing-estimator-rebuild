@@ -12,6 +12,7 @@ import type { MapPoint, MeasurementMode, MeasurementResult, MeasurementSystem } 
 
 interface MapMeasurePanelProps {
   onMeasurementChange: (measurement: MeasurementResult | null) => void;
+  onAddressChange: (address: string) => void;
   measurementSystem: MeasurementSystem;
 }
 
@@ -100,7 +101,7 @@ const MapViewController = ({
   return null;
 };
 
-export const MapMeasurePanel = ({ onMeasurementChange, measurementSystem }: MapMeasurePanelProps) => {
+export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurementSystem }: MapMeasurePanelProps) => {
   const [mode, setMode] = useState<MeasurementMode>("distance");
   const [points, setPoints] = useState<MapPoint[]>([]);
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
@@ -332,6 +333,7 @@ export const MapMeasurePanel = ({ onMeasurementChange, measurementSystem }: MapM
                 setMapCenter(result.center);
                 setSearchResults([]);
                 setSearchQuery(result.label);
+                onAddressChange(result.label);
               }}
             >
               {result.label}

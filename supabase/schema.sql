@@ -115,6 +115,7 @@ create table if not exists public.lead_events (
   customer_name text not null default '',
   customer_email text not null default '',
   customer_phone text not null default '',
+  customer_address text not null default '',
   message text not null,
   measurement_mode text check (measurement_mode in ('distance', 'area')),
   measurement_value numeric(12,2),
@@ -152,6 +153,9 @@ add column if not exists deleted_at timestamptz;
 
 alter table public.lead_events
 add column if not exists updated_at timestamptz not null default now();
+
+alter table public.lead_events
+add column if not exists customer_address text not null default '';
 
 do $$
 begin

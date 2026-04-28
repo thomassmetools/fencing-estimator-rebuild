@@ -17,6 +17,11 @@ export const buildResultMessage = ({
   measurement,
   selectedProducts,
   customerName,
+  customerAddress,
+  siteAccess,
+  oldFenceRemoval,
+  projectTiming,
+  siteNotes,
 }: {
   businessName: string;
   openingLine: string;
@@ -24,6 +29,11 @@ export const buildResultMessage = ({
   measurement: MeasurementResult | null;
   selectedProducts: Array<{ product: Product; quantity: number }>;
   customerName: string;
+  customerAddress: string;
+  siteAccess: string;
+  oldFenceRemoval: string;
+  projectTiming: string;
+  siteNotes: string;
 }) => {
   const lines: string[] = [];
 
@@ -32,6 +42,10 @@ export const buildResultMessage = ({
 
   if (customerName.trim()) {
     lines.push(`Customer: ${customerName.trim()}`);
+  }
+
+  if (customerAddress.trim()) {
+    lines.push(`Site address: ${customerAddress.trim()}`);
   }
 
   if (measurement) {
@@ -45,6 +59,15 @@ export const buildResultMessage = ({
     selectedProducts.forEach(({ product, quantity }) => {
       lines.push(`- ${product.name}: ${quantity} ${product.unit}`);
     });
+  }
+
+  lines.push("");
+  lines.push("Site details:");
+  lines.push(`- Access: ${siteAccess || "Not provided"}`);
+  lines.push(`- Remove old fence: ${oldFenceRemoval || "Not provided"}`);
+  lines.push(`- Preferred timing: ${projectTiming || "Not provided"}`);
+  if (siteNotes.trim()) {
+    lines.push(`- Extra notes: ${siteNotes.trim()}`);
   }
 
   lines.push("");
