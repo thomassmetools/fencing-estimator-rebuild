@@ -268,6 +268,75 @@ const syncSubscriptionStatus = async ({
   }
 };
 
+const recordBillingEvent = async ({
+  stripeEventId,
+  eventType,
+  stripeSubscriptionId,
+  invoiceId,
+  invoiceStatus,
+  amountPaid,
+  amountDue,
+  currency,
+  billingReason,
+  periodEnd,
+  occurredAt,
+  summary,
+}: {
+  stripeEventId: string;
+  eventType: string;
+  stripeSubscriptionId: string | null;
+  invoiceId: string | null;
+  invoiceStatus: string | null;
+  amountPaid: number | null;
+  amountDue: number | null;
+  currency: string | null;
+  billingReason: string | null;
+  periodEnd: string | null;
+  occurredAt: string;
+  summary: string;
+}) => {
+  if (!stripeSubscriptionId) {
+    return;
+  }
+
+  const { data: subscription, error: subscriptionLookupError } = await adminClient
+    .from("subscriptions")
+    .select("id, contractor_id")
+    .eq("stripe_subscription_id", stripeSubscriptionId)
+    .maybeSingle();
+
+  if (subscriptionLookupError) {
+    throw subscriptionLookupError;
+  }
+
+  if (!subscription) {
+    return;
+  }
+
+  const { error } = await adminClient.from("subscription_billing_events").upsert(
+    {
+      contractor_id: subscription.contractor_id,
+      subscription_id: subscription.id,
+      stripe_event_id: stripeEventId,
+      event_type: eventType,
+      invoice_id: invoiceId,
+      invoice_status: invoiceStatus,
+      amount_paid: amountPaid,
+      amount_due: amountDue,
+      currency,
+      billing_reason: billingReason,
+      period_end: periodEnd,
+      occurred_at: occurredAt,
+      summary,
+    },
+    { onConflict: "stripe_event_id" },
+  );
+
+  if (error) {
+    throw error;
+  }
+};
+
 const handleCheckoutCompleted = async (session: Stripe.Checkout.Session) => {
   if (session.mode !== "subscription") {
     return;
@@ -321,6 +390,42 @@ const handleSubscriptionChange = async (subscription: Stripe.Subscription) => {
   });
 };
 
+const handleInvoicePaid = async (event: Stripe.Event, invoice: Stripe.Invoice) => {
+  const stripeSubscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : null;
+  await recordBillingEvent({
+    stripeEventId: event.id,
+    eventType: event.type,
+    stripeSubscriptionId,
+    invoiceId: invoice.id,
+    invoiceStatus: invoice.status ?? null,
+    amountPaid: invoice.amount_paid ?? null,
+    amountDue: invoice.amount_due ?? null,
+    currency: invoice.currency ?? null,
+    billingReason: invoice.billing_reason ?? null,
+    periodEnd: invoice.lines.data[0]?.period?.end ? new Date(invoice.lines.data[0].period.end * 1000).toISOString() : null,
+    occurredAt: new Date(event.created * 1000).toISOString(),
+    summary: "Invoice paid successfully",
+  });
+};
+
+const handleInvoicePaymentFailed = async (event: Stripe.Event, invoice: Stripe.Invoice) => {
+  const stripeSubscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : null;
+  await recordBillingEvent({
+    stripeEventId: event.id,
+    eventType: event.type,
+    stripeSubscriptionId,
+    invoiceId: invoice.id,
+    invoiceStatus: invoice.status ?? null,
+    amountPaid: invoice.amount_paid ?? null,
+    amountDue: invoice.amount_due ?? null,
+    currency: invoice.currency ?? null,
+    billingReason: invoice.billing_reason ?? null,
+    periodEnd: invoice.lines.data[0]?.period?.end ? new Date(invoice.lines.data[0].period.end * 1000).toISOString() : null,
+    occurredAt: new Date(event.created * 1000).toISOString(),
+    summary: "Invoice payment failed",
+  });
+};
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -353,6 +458,12 @@ Deno.serve(async (request) => {
       case "customer.subscription.updated":
       case "customer.subscription.deleted":
         await handleSubscriptionChange(event.data.object as Stripe.Subscription);
+        break;
+      case "invoice.paid":
+        await handleInvoicePaid(event, event.data.object as Stripe.Invoice);
+        break;
+      case "invoice.payment_failed":
+        await handleInvoicePaymentFailed(event, event.data.object as Stripe.Invoice);
         break;
       default:
         break;

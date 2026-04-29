@@ -93,6 +93,24 @@ create table if not exists public.subscriptions (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.subscription_billing_events (
+  id uuid primary key default gen_random_uuid(),
+  contractor_id uuid not null references public.contractors(id) on delete cascade,
+  subscription_id uuid references public.subscriptions(id) on delete set null,
+  stripe_event_id text not null unique,
+  event_type text not null,
+  invoice_id text,
+  invoice_status text,
+  amount_paid integer,
+  amount_due integer,
+  currency text,
+  billing_reason text,
+  period_end timestamptz,
+  summary text not null,
+  occurred_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
 alter table public.subscriptions
 add column if not exists current_period_end timestamptz;
 
@@ -264,6 +282,7 @@ alter table public.products enable row level security;
 alter table public.contractor_users enable row level security;
 alter table public.lead_events enable row level security;
 alter table public.subscriptions enable row level security;
+alter table public.subscription_billing_events enable row level security;
 alter table public.onboarding_progress enable row level security;
 
 drop policy if exists "Public can read published contractors" on public.contractors;
@@ -421,6 +440,19 @@ using (
     select 1
     from public.contractor_users cu
     where cu.contractor_id = subscriptions.contractor_id
+      and cu.auth_user_id = auth.uid()
+  )
+);
+
+drop policy if exists "Members can read billing events" on public.subscription_billing_events;
+create policy "Members can read billing events"
+on public.subscription_billing_events
+for select
+using (
+  exists (
+    select 1
+    from public.contractor_users cu
+    where cu.contractor_id = subscription_billing_events.contractor_id
       and cu.auth_user_id = auth.uid()
   )
 );

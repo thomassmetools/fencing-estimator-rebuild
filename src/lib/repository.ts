@@ -2,6 +2,7 @@ import { seedContractors } from "../data/seed";
 import { getSupabaseAnonKey, getSupabaseClient, getSupabaseUrl, isSupabaseConfigured } from "./supabase";
 import type {
   AdminAccessRecord,
+  BillingEventRecord,
   ContractorRecord,
   ContractorOpsStatus,
   LeadNotificationStatus,
@@ -83,6 +84,25 @@ type SubscriptionRow = {
   stripe_subscription_id: string | null;
   stripe_checkout_session_id: string | null;
   current_period_end: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type BillingEventRow = {
+  id: string;
+  contractor_id: string;
+  subscription_id: string | null;
+  stripe_event_id: string;
+  event_type: string;
+  invoice_id: string | null;
+  invoice_status: string | null;
+  amount_paid: number | null;
+  amount_due: number | null;
+  currency: string | null;
+  billing_reason: string | null;
+  period_end: string | null;
+  summary: string;
+  occurred_at: string;
   created_at: string;
 };
 
@@ -253,6 +273,7 @@ const mapSubscription = (row: SubscriptionRow): SubscriptionRecord => ({
   stripeCheckoutSessionId: row.stripe_checkout_session_id,
   currentPeriodEnd: row.current_period_end,
   createdAt: row.created_at,
+  updatedAt: row.updated_at ?? row.created_at,
 });
 
 const mapOnboarding = (row: OnboardingRow): OnboardingProgressRecord => ({
@@ -262,6 +283,24 @@ const mapOnboarding = (row: OnboardingRow): OnboardingProgressRecord => ({
   completedAt: row.completed_at,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
+});
+
+const mapBillingEvent = (row: BillingEventRow): BillingEventRecord => ({
+  id: row.id,
+  contractorId: row.contractor_id,
+  subscriptionId: row.subscription_id,
+  stripeEventId: row.stripe_event_id,
+  eventType: row.event_type,
+  invoiceId: row.invoice_id,
+  invoiceStatus: row.invoice_status,
+  amountPaid: row.amount_paid,
+  amountDue: row.amount_due,
+  currency: row.currency,
+  billingReason: row.billing_reason,
+  periodEnd: row.period_end,
+  summary: row.summary,
+  occurredAt: row.occurred_at,
+  createdAt: row.created_at,
 });
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -579,6 +618,127 @@ export const fetchContractorOpsStatus = async (contractorId: string): Promise<Co
   }
 
   return responseBody as ContractorOpsStatus;
+};
+
+export const fetchLatestSubscription = async (contractorId: string): Promise<SubscriptionRecord | null> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select(`
+      id,
+      contractor_id,
+      customer_email,
+      customer_name,
+      plan_code,
+      status,
+      stripe_customer_id,
+      stripe_subscription_id,
+      stripe_checkout_session_id,
+      current_period_end,
+      created_at,
+      updated_at
+    `)
+    .eq("contractor_id", contractorId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return mapSubscription(data as SubscriptionRow);
+};
+
+export const fetchBillingEvents = async (contractorId: string): Promise<BillingEventRecord[]> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("subscription_billing_events")
+    .select(`
+      id,
+      contractor_id,
+      subscription_id,
+      stripe_event_id,
+      event_type,
+      invoice_id,
+      invoice_status,
+      amount_paid,
+      amount_due,
+      currency,
+      billing_reason,
+      period_end,
+      summary,
+      occurred_at,
+      created_at
+    `)
+    .eq("contractor_id", contractorId)
+    .order("occurred_at", { ascending: false })
+    .limit(12);
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as BillingEventRow[]).map(mapBillingEvent);
+};
+
+export const createBillingPortalSession = async ({
+  contractorId,
+  flow,
+}: {
+  contractorId: string;
+  flow: "manage" | "cancel";
+}) => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const functionsUrl = `${getSupabaseUrl()}/functions/v1/billing-portal`;
+  const anonKey = getSupabaseAnonKey();
+  const {
+    data: sessionData,
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError || !sessionData.session) {
+    throw sessionError ?? new Error("Your session has expired. Please sign in again.");
+  }
+
+  const response = await fetch(functionsUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+      apikey: anonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contractor_id: contractorId,
+      flow,
+    }),
+  });
+
+  const responseBody = await response
+    .json()
+    .catch(async () => ({ error: (await response.text()) || "Unable to create billing portal session." }));
+
+  if (!response.ok) {
+    throw new Error(typeof responseBody?.error === "string" ? responseBody.error : "Unable to create billing portal session.");
+  }
+
+  return responseBody as { url: string };
 };
 
 export const sendContractorTestLeadEmail = async (contractorId: string) => {

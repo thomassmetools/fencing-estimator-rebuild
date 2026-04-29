@@ -111,6 +111,25 @@ export interface SubscriptionRecord {
   stripeCheckoutSessionId: string | null;
   currentPeriodEnd: string | null;
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingEventRecord {
+  id: string;
+  contractorId: string;
+  subscriptionId: string | null;
+  stripeEventId: string;
+  eventType: string;
+  invoiceId: string | null;
+  invoiceStatus: string | null;
+  amountPaid: number | null;
+  amountDue: number | null;
+  currency: string | null;
+  billingReason: string | null;
+  periodEnd: string | null;
+  summary: string;
+  occurredAt: string;
+  createdAt: string;
 }
 
 export interface OnboardingProgressRecord {

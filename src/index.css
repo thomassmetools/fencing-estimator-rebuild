@@ -1006,6 +1006,34 @@ select {
   background: var(--surface-strong);
 }
 
+.billing-history,
+.billing-event-list {
+  display: grid;
+  gap: 12px;
+}
+
+.billing-event-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface-strong);
+}
+
+.billing-event-header,
+.billing-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.billing-event-header span,
+.billing-event-meta {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
 .error-text {
   color: #9a2e2e;
   margin-bottom: 0;

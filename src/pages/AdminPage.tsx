@@ -5,9 +5,18 @@ import { AdminLeadList } from "../components/AdminLeadList";
 import { AdminOpsPanel } from "../components/AdminOpsPanel";
 import { AdminProductsTable } from "../components/AdminProductsTable";
 import { AdminSettingsForm } from "../components/AdminSettingsForm";
+import { AdminSubscriptionPanel } from "../components/AdminSubscriptionPanel";
 import { useAuth } from "../hooks/useAuth";
-import { fetchAdminContractor, fetchLeadEvents, replaceProducts, updateContractorSettings, updateLeadEvent } from "../lib/repository";
-import type { ContractorRecord, LeadRecord, LeadStatus, Product } from "../types";
+import {
+  fetchAdminContractor,
+  fetchBillingEvents,
+  fetchLeadEvents,
+  fetchLatestSubscription,
+  replaceProducts,
+  updateContractorSettings,
+  updateLeadEvent,
+} from "../lib/repository";
+import type { BillingEventRecord, ContractorRecord, LeadRecord, LeadStatus, Product, SubscriptionRecord } from "../types";
 
 interface AdminPageProps {
   refreshPublicContractors: () => Promise<void>;
@@ -24,6 +33,10 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
   const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [isLoadingLeads, setIsLoadingLeads] = useState(false);
   const [leadsError, setLeadsError] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
+  const [billingEvents, setBillingEvents] = useState<BillingEventRecord[]>([]);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
 
   const publicUrl = useMemo(() => `${window.location.origin}/${slug}`, [slug]);
@@ -57,6 +70,23 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
     }
   };
 
+  const loadSubscription = async (contractorId: string) => {
+    setIsLoadingSubscription(true);
+    setSubscriptionError(null);
+    try {
+      const [nextSubscription, nextBillingEvents] = await Promise.all([
+        fetchLatestSubscription(contractorId),
+        fetchBillingEvents(contractorId),
+      ]);
+      setSubscription(nextSubscription);
+      setBillingEvents(nextBillingEvents);
+    } catch (loadError) {
+      setSubscriptionError(loadError instanceof Error ? loadError.message : "Unable to load subscription.");
+    } finally {
+      setIsLoadingSubscription(false);
+    }
+  };
+
   useEffect(() => {
     if (!isConfigured || authLoading || !session?.user.id) {
       return;
@@ -74,6 +104,7 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
         setLoadedSlug(slug);
         if (record) {
           void loadLeads(record.id);
+          void loadSubscription(record.id);
         }
       })
       .catch((loadError) => {
@@ -220,8 +251,18 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
         <AdminProductsTable key={`products-${contractor.id}-${contractor.products.length}`} products={contractor.products} onSave={saveProducts} saveStatus={productsStatus} />
       </section>
       <section className="admin-grid">
-        <AdminAccountPanel email={contractor.contact.email} />
+        <AdminSubscriptionPanel
+          subscription={subscription}
+          billingEvents={billingEvents}
+          contractorId={contractor.id}
+          isLoading={isLoadingSubscription}
+          error={subscriptionError}
+          onRefresh={() => loadSubscription(contractor.id)}
+        />
         <AdminOpsPanel contractorId={contractor.id} />
+      </section>
+      <section className="admin-grid">
+        <AdminAccountPanel email={contractor.contact.email} />
       </section>
       <AdminLeadList
         leads={leads}
