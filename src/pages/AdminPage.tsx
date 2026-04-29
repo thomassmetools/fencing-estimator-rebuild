@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
+import { AdminAccountPanel } from "../components/AdminAccountPanel";
 import { AdminLeadList } from "../components/AdminLeadList";
+import { AdminOpsPanel } from "../components/AdminOpsPanel";
 import { AdminProductsTable } from "../components/AdminProductsTable";
 import { AdminSettingsForm } from "../components/AdminSettingsForm";
 import { useAuth } from "../hooks/useAuth";
@@ -216,6 +218,10 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
       <section className="admin-grid">
         <AdminSettingsForm key={`settings-${contractor.id}`} contractor={contractor} onSave={saveSettings} saveStatus={settingsStatus} />
         <AdminProductsTable key={`products-${contractor.id}-${contractor.products.length}`} products={contractor.products} onSave={saveProducts} saveStatus={productsStatus} />
+      </section>
+      <section className="admin-grid">
+        <AdminAccountPanel email={contractor.contact.email} />
+        <AdminOpsPanel contractorId={contractor.id} />
       </section>
       <AdminLeadList
         leads={leads}

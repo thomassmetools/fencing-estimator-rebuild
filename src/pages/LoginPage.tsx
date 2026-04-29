@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 export const LoginPage = () => {
@@ -70,7 +70,7 @@ export const LoginPage = () => {
       <section className="auth-card">
         <p className="eyebrow">Contractor sign in</p>
         <h1>Admin access</h1>
-        <p>Use the Supabase user account linked to your contractor profile, or send a setup link to the payment email.</p>
+        <p>Use your password, request a sign-in link, or reset your password without needing manual help.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="field-stack">
@@ -89,6 +89,9 @@ export const LoginPage = () => {
           <button type="button" onClick={() => void handleMagicLink()} disabled={isSendingLink || isLoading}>
             {isSendingLink ? "Sending setup link..." : "Email me a setup link"}
           </button>
+          <Link className="button-link" to="/forgot-password">
+            Forgot password?
+          </Link>
         </form>
       </section>
     </main>

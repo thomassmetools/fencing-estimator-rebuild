@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Product } from "../types";
+import { validateProducts } from "../lib/validation";
 
 interface AdminProductsTableProps {
   products: Product[];
@@ -33,6 +34,11 @@ export const AdminProductsTable = ({ products, onSave, saveStatus }: AdminProduc
 
   const handleSave = async () => {
     setError(null);
+    const validationError = validateProducts(draftProducts);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     try {
       await onSave(draftProducts);
     } catch (saveError) {

@@ -3,6 +3,9 @@ import { getSupabaseAnonKey, getSupabaseClient, getSupabaseUrl, isSupabaseConfig
 import type {
   AdminAccessRecord,
   ContractorRecord,
+  ContractorOpsStatus,
+  LeadNotificationStatus,
+  LeadSource,
   LeadStatus,
   LeadRecord,
   MeasurementSystem,
@@ -51,15 +54,17 @@ type LeadRow = {
   customer_phone: string;
   customer_address: string;
   message: string;
-  measurement_mode: "distance" | "area" | null;
+  measurement_mode: "distance" | null;
   measurement_value: number | null;
   measurement_unit: string | null;
   measurement_points: { lat: number; lng: number }[] | null;
   estimated_total: number | null;
   selected_products_summary: string[] | null;
-  source: "copy" | "submit";
+  source: LeadSource;
   status: LeadStatus;
   internal_notes: string;
+  notification_status: LeadNotificationStatus;
+  notification_error: string | null;
   last_contacted_at: string | null;
   archived_at: string | null;
   deleted_at: string | null;
@@ -146,6 +151,8 @@ const leadColumns = `
   source,
   status,
   internal_notes,
+  notification_status,
+  notification_error,
   last_contacted_at,
   archived_at,
   deleted_at,
@@ -225,6 +232,8 @@ const mapLead = (row: LeadRow): LeadRecord => ({
   source: row.source,
   status: row.status ?? "new",
   internalNotes: row.internal_notes ?? "",
+  notificationStatus: row.notification_status ?? "pending",
+  notificationError: row.notification_error ?? null,
   lastContactedAt: row.last_contacted_at ?? null,
   archivedAt: row.archived_at ?? null,
   deletedAt: row.deleted_at ?? null,
@@ -467,6 +476,7 @@ export const submitLeadEvent = async ({
   measurement,
   estimatedTotal,
   selectedProductsSummary,
+  source,
   turnstileToken,
 }: {
   contractorId: string;
@@ -478,6 +488,7 @@ export const submitLeadEvent = async ({
   measurement: MeasurementResult | null;
   estimatedTotal: number | null;
   selectedProductsSummary: string[];
+  source: LeadSource;
   turnstileToken: string;
 }) => {
   const supabase = getSupabaseClient();
@@ -501,7 +512,7 @@ export const submitLeadEvent = async ({
     measurement_points: measurement?.points ?? [],
     estimated_total: estimatedTotal,
     selected_products_summary: selectedProductsSummary,
-    source: "submit",
+    source,
     turnstile_token: turnstileToken,
   };
 
@@ -527,6 +538,88 @@ export const submitLeadEvent = async ({
   }
 
   return mapLead(responseBody as LeadRow);
+};
+
+export const fetchContractorOpsStatus = async (contractorId: string): Promise<ContractorOpsStatus> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const functionsUrl = `${getSupabaseUrl()}/functions/v1/contractor-ops`;
+  const anonKey = getSupabaseAnonKey();
+  const {
+    data: sessionData,
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError || !sessionData.session) {
+    throw sessionError ?? new Error("Your session has expired. Please sign in again.");
+  }
+
+  const response = await fetch(functionsUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+      apikey: anonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contractor_id: contractorId,
+      action: "status",
+    }),
+  });
+
+  const responseBody = await response
+    .json()
+    .catch(async () => ({ error: (await response.text()) || "Unable to read contractor ops status." }));
+
+  if (!response.ok) {
+    throw new Error(typeof responseBody?.error === "string" ? responseBody.error : "Unable to load contractor ops status.");
+  }
+
+  return responseBody as ContractorOpsStatus;
+};
+
+export const sendContractorTestLeadEmail = async (contractorId: string) => {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const functionsUrl = `${getSupabaseUrl()}/functions/v1/contractor-ops`;
+  const anonKey = getSupabaseAnonKey();
+  const {
+    data: sessionData,
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError || !sessionData.session) {
+    throw sessionError ?? new Error("Your session has expired. Please sign in again.");
+  }
+
+  const response = await fetch(functionsUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+      apikey: anonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contractor_id: contractorId,
+      action: "send_test_lead_email",
+    }),
+  });
+
+  const responseBody = await response
+    .json()
+    .catch(async () => ({ error: (await response.text()) || "Unable to read test email response." }));
+
+  if (!response.ok) {
+    throw new Error(typeof responseBody?.error === "string" ? responseBody.error : "Unable to send test lead email.");
+  }
+
+  return responseBody as { message: string };
 };
 
 export const fetchLeadEvents = async (contractorId: string): Promise<LeadRecord[]> => {

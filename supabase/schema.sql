@@ -117,15 +117,18 @@ create table if not exists public.lead_events (
   customer_phone text not null default '',
   customer_address text not null default '',
   message text not null,
-  measurement_mode text check (measurement_mode in ('distance', 'area')),
+  measurement_mode text check (measurement_mode in ('distance')),
   measurement_value numeric(12,2),
   measurement_unit text,
   measurement_points jsonb not null default '[]'::jsonb,
   estimated_total numeric(12,2),
   selected_products_summary text[] not null default '{}',
-  source text not null check (source in ('copy', 'submit')),
+  source text not null check (source in ('copy', 'email', 'submit')),
   status text not null default 'new' check (status in ('new', 'contacted', 'quoted', 'won', 'lost')),
   internal_notes text not null default '',
+  notification_status text not null default 'pending' check (notification_status in ('pending', 'sent', 'skipped', 'failed')),
+  notification_error text,
+  submitter_fingerprint text,
   last_contacted_at timestamptz,
   archived_at timestamptz,
   deleted_at timestamptz,
@@ -141,6 +144,15 @@ add column if not exists status text not null default 'new';
 
 alter table public.lead_events
 add column if not exists internal_notes text not null default '';
+
+alter table public.lead_events
+add column if not exists notification_status text not null default 'pending';
+
+alter table public.lead_events
+add column if not exists notification_error text;
+
+alter table public.lead_events
+add column if not exists submitter_fingerprint text;
 
 alter table public.lead_events
 add column if not exists last_contacted_at timestamptz;
@@ -171,6 +183,41 @@ begin
   end if;
 end;
 $$;
+
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'lead_events_source_check'
+      and conrelid = 'public.lead_events'::regclass
+  ) then
+    alter table public.lead_events drop constraint lead_events_source_check;
+  end if;
+
+  alter table public.lead_events
+  add constraint lead_events_source_check
+  check (source in ('copy', 'email', 'submit'));
+end;
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'lead_events_notification_status_check'
+      and conrelid = 'public.lead_events'::regclass
+  ) then
+    alter table public.lead_events
+    add constraint lead_events_notification_status_check
+    check (notification_status in ('pending', 'sent', 'skipped', 'failed'));
+  end if;
+end;
+$$;
+
+create index if not exists lead_events_submitter_fingerprint_created_at_idx
+on public.lead_events (contractor_id, submitter_fingerprint, created_at desc);
 
 create or replace function public.touch_updated_at()
 returns trigger

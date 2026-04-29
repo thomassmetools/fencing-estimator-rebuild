@@ -28,16 +28,16 @@ export const CheckoutSuccessPage = () => {
 
         <div className="action-row stretch">
           <Link className="button-link primary" to="/login?next=/welcome">
-            I already have the email
+            Go to contractor login
           </Link>
-          <Link className="button-link" to="/login?next=/welcome">
-            Re-send setup link
+          <Link className="button-link" to="/forgot-password">
+            Reset password
           </Link>
         </div>
 
         <p className="helper-text">
-          If the invite doesn't arrive within a few minutes, open the login page and use the same checkout email to send
-          yourself a fresh setup link.
+          If the invite doesn't arrive within a few minutes, open contractor login and use the same checkout email to
+          request a sign-in link.
         </p>
       </section>
     </main>

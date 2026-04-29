@@ -9,6 +9,7 @@ import {
   updateOnboardingProgress,
 } from "../lib/repository";
 import type { ContractorRecord, MeasurementSystem, OnboardingContext, Product } from "../types";
+import { validateContractor, validateProducts } from "../lib/validation";
 
 const defaultProduct = (): Product => ({
   id: crypto.randomUUID(),
@@ -205,6 +206,20 @@ export const OnboardingPage = () => {
     }
 
     setSaveStatus("saving");
+    const contractorError = validateContractor(draft);
+    if (contractorError) {
+      setError(contractorError);
+      setSaveStatus("idle");
+      return;
+    }
+
+    const productsError = validateProducts(draft.products);
+    if (productsError) {
+      setError(productsError);
+      setSaveStatus("idle");
+      return;
+    }
+
     try {
       await updateContractorSettings(draft);
       await replaceProducts(draft.id, draft.products);

@@ -63,6 +63,19 @@ const buildMapLink = (lead: LeadRecord) => {
   return `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`;
 };
 
+const notificationSummary = (lead: LeadRecord) => {
+  switch (lead.notificationStatus) {
+    case "sent":
+      return "Lead email sent";
+    case "failed":
+      return lead.notificationError || "Lead email failed";
+    case "skipped":
+      return lead.notificationError || "Lead email not configured";
+    default:
+      return "Lead email pending";
+  }
+};
+
 export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead }: AdminLeadListProps) => {
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -297,11 +310,15 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
                             <div>
                               <h3>Lead details</h3>
                               {lead.customerAddress ? <p className="helper-text">Site address: {lead.customerAddress}</p> : null}
+                              <p className="helper-text">Source: {lead.source}</p>
                               {lead.selectedProductsSummary.length > 0 ? (
                                 <p className="helper-text">{lead.selectedProductsSummary.join(" | ")}</p>
                               ) : (
                                 <p className="helper-text">No products selected.</p>
                               )}
+                              <p className={lead.notificationStatus === "failed" ? "error-text" : "helper-text"}>
+                                {notificationSummary(lead)}
+                              </p>
                               <textarea className="result-area lead-message" value={lead.message} readOnly />
                             </div>
                             <div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ContractorRecord, MeasurementSystem } from "../types";
+import { validateContractor } from "../lib/validation";
 
 interface AdminSettingsFormProps {
   contractor: ContractorRecord;
@@ -66,6 +67,11 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
 
   const handleSave = async () => {
     setError(null);
+    const validationError = validateContractor(draft);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     try {
       await onSave(draft);
     } catch (saveError) {

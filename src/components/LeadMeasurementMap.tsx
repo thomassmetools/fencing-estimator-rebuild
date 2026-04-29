@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Polyline, TileLayer, useMap } from "react-leaflet";
 import { satelliteTilesAttribution, satelliteTilesUrl } from "../lib/map-config";
 import type { LeadRecord } from "../types";
 
@@ -57,12 +57,7 @@ export const LeadMeasurementMap = ({ lead }: LeadMeasurementMapProps) => {
             pathOptions={{ color: "#fff", fillColor: "#c96f2d", fillOpacity: 1 }}
           />
         ))}
-        {lead.measurementMode === "distance" && lead.measurementPoints.length > 1 ? (
-          <Polyline positions={lead.measurementPoints} pathOptions={{ color: "#173f35", weight: 4 }} />
-        ) : null}
-        {lead.measurementMode === "area" && lead.measurementPoints.length > 2 ? (
-          <Polygon positions={lead.measurementPoints} pathOptions={{ color: "#173f35", weight: 3, fillOpacity: 0.2 }} />
-        ) : null}
+        {lead.measurementPoints.length > 1 ? <Polyline positions={lead.measurementPoints} pathOptions={{ color: "#173f35", weight: 4 }} /> : null}
       </MapContainer>
     </div>
   );

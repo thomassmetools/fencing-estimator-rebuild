@@ -74,6 +74,31 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           throw error;
         }
       },
+      requestPasswordReset: async (email: string) => {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          throw new Error("Supabase is not configured.");
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: getSiteUrl("/reset-password"),
+        });
+
+        if (error) {
+          throw error;
+        }
+      },
+      updatePassword: async (password: string) => {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          throw new Error("Supabase is not configured.");
+        }
+
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) {
+          throw error;
+        }
+      },
       signOut: async () => {
         const supabase = getSupabaseClient();
         if (!supabase) {

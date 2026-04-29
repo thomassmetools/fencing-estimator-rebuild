@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Polyline, TileLayer, useMap } from "react-leaflet";
 import type { LatLngLiteral } from "leaflet";
 import {
   hasMapboxAccessToken,
@@ -8,7 +8,7 @@ import {
   satelliteTilesAttribution,
   satelliteTilesUrl,
 } from "../lib/map-config";
-import type { MapPoint, MeasurementMode, MeasurementResult, MeasurementSystem } from "../types";
+import type { MapPoint, MeasurementResult, MeasurementSystem } from "../types";
 
 interface MapMeasurePanelProps {
   onMeasurementChange: (measurement: MeasurementResult | null) => void;
@@ -24,32 +24,7 @@ interface SearchResult {
 
 const defaultCenter: LatLngLiteral = { lat: -36.8485, lng: 174.7633 };
 
-const calculatePolygonArea = (points: LatLngLiteral[]) => {
-  if (points.length < 3) {
-    return 0;
-  }
-
-  const averageLat = points.reduce((sum, point) => sum + point.lat, 0) / points.length;
-  const metresPerDegreeLat = 111_320;
-  const metresPerDegreeLng = Math.cos((averageLat * Math.PI) / 180) * 111_320;
-
-  const projected = points.map((point) => ({
-    x: point.lng * metresPerDegreeLng,
-    y: point.lat * metresPerDegreeLat,
-  }));
-
-  let area = 0;
-  for (let index = 0; index < projected.length; index += 1) {
-    const next = (index + 1) % projected.length;
-    area += projected[index].x * projected[next].y;
-    area -= projected[next].x * projected[index].y;
-  }
-
-  return Math.abs(area) / 2;
-};
-
 const metresToFeet = (value: number) => value * 3.28084;
-const squareMetresToSquareFeet = (value: number) => value * 10.7639;
 
 const formatMeasurement = (value: number, unitLabel: string) => {
   return `${value.toFixed(1)} ${unitLabel}`;
@@ -61,7 +36,7 @@ const MapViewController = ({
   points,
   onPointAdded,
 }: {
-  mode: MeasurementMode | null;
+  mode: "distance" | null;
   center: MapPoint | null;
   points: MapPoint[];
   onPointAdded: (point: MapPoint) => void;
@@ -102,7 +77,7 @@ const MapViewController = ({
 };
 
 export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurementSystem }: MapMeasurePanelProps) => {
-  const [mode, setMode] = useState<MeasurementMode>("distance");
+  const [mode, setMode] = useState<"distance">("distance");
   const [points, setPoints] = useState<MapPoint[]>([]);
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
   const [searchQuery, setSearchQuery] = useState("");
@@ -116,46 +91,28 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
       return null;
     }
 
-    if (mode === "distance") {
-      let totalDistance = 0;
-      for (let index = 0; index < points.length - 1; index += 1) {
-        const current = points[index];
-        const next = points[index + 1];
-        const latDelta = ((next.lat - current.lat) * Math.PI) / 180;
-        const lngDelta = ((next.lng - current.lng) * Math.PI) / 180;
-        const a =
-          Math.sin(latDelta / 2) ** 2 +
-          Math.cos((current.lat * Math.PI) / 180) *
-            Math.cos((next.lat * Math.PI) / 180) *
-            Math.sin(lngDelta / 2) ** 2;
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        totalDistance += 6_371_000 * c;
-      }
-
-      const displayValue = measurementSystem === "imperial" ? metresToFeet(totalDistance) : totalDistance;
-
-      return {
-        mode,
-        value: displayValue,
-        baseValue: totalDistance,
-        unitLabel: measurementSystem === "imperial" ? "ft" : "m",
-        pointCount: points.length,
-        points,
-      };
+    let totalDistance = 0;
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const current = points[index];
+      const next = points[index + 1];
+      const latDelta = ((next.lat - current.lat) * Math.PI) / 180;
+      const lngDelta = ((next.lng - current.lng) * Math.PI) / 180;
+      const a =
+        Math.sin(latDelta / 2) ** 2 +
+        Math.cos((current.lat * Math.PI) / 180) *
+          Math.cos((next.lat * Math.PI) / 180) *
+          Math.sin(lngDelta / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      totalDistance += 6_371_000 * c;
     }
 
-    if (points.length < 3) {
-      return null;
-    }
-
-    const areaSquareMetres = calculatePolygonArea(points);
-    const displayArea = measurementSystem === "imperial" ? squareMetresToSquareFeet(areaSquareMetres) : areaSquareMetres;
+    const displayValue = measurementSystem === "imperial" ? metresToFeet(totalDistance) : totalDistance;
 
     return {
       mode,
-      value: displayArea,
-      baseValue: areaSquareMetres,
-      unitLabel: measurementSystem === "imperial" ? "sq ft" : "m2",
+      value: displayValue,
+      baseValue: totalDistance,
+      unitLabel: measurementSystem === "imperial" ? "ft" : "m",
       pointCount: points.length,
       points,
     };
@@ -362,12 +319,7 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
               pathOptions={{ color: "#fff", fillColor: "#c96f2d", fillOpacity: 1 }}
             />
           ))}
-          {mode === "distance" && points.length > 1 ? (
-            <Polyline positions={points} pathOptions={{ color: "#173f35", weight: 4 }} />
-          ) : null}
-          {mode === "area" && points.length > 2 ? (
-            <Polygon positions={points} pathOptions={{ color: "#173f35", weight: 3, fillOpacity: 0.2 }} />
-          ) : null}
+          {points.length > 1 ? <Polyline positions={points} pathOptions={{ color: "#173f35", weight: 4 }} /> : null}
         </MapContainer>
       </div>
 

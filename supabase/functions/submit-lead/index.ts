@@ -22,13 +22,13 @@ interface LeadPayload {
   customer_phone: string;
   customer_address: string;
   message: string;
-  measurement_mode: "distance" | "area" | null;
+  measurement_mode: "distance" | null;
   measurement_value: number | null;
   measurement_unit: string | null;
   measurement_points: Array<{ lat: number; lng: number }>;
   estimated_total: number | null;
   selected_products_summary: string[];
-  source: "submit";
+  source: "copy" | "email" | "submit";
   turnstile_token: string;
 }
 
@@ -55,19 +55,17 @@ const sendLeadNotification = async ({
   customerPhone: string;
   customerAddress: string;
   message: string;
-  measurementMode: "distance" | "area" | null;
+  measurementMode: "distance" | null;
   measurementValue: number | null;
   measurementUnit: string | null;
   selectedProductsSummary: string[];
   estimatedTotal: number | null;
 }) => {
   if (!resendApiKey || !resendFromEmail || !contractorEmail) {
-    console.warn("Lead email notification skipped.", {
-      hasResendApiKey: Boolean(resendApiKey),
-      hasResendFromEmail: Boolean(resendFromEmail),
-      hasContractorEmail: Boolean(contractorEmail),
-    });
-    return;
+    return {
+      status: "skipped" as const,
+      error: "Lead email notification is not fully configured.",
+    };
   }
 
   const measurementSummary =
@@ -121,8 +119,34 @@ const sendLeadNotification = async ({
 
   if (!response.ok) {
     const responseText = await response.text();
-    throw new Error(`Lead email notification failed: ${response.status} ${responseText}`);
+    return {
+      status: "failed" as const,
+      error: `Lead email notification failed: ${response.status} ${responseText}`,
+    };
   }
+
+  return {
+    status: "sent" as const,
+    error: null,
+  };
+};
+
+const createSubmitterFingerprint = async (request: Request) => {
+  const ipAddress =
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "";
+  const userAgent = request.headers.get("user-agent") ?? "";
+  const rawFingerprint = `${ipAddress}|${userAgent}`;
+
+  if (!rawFingerprint.replace(/\|/g, "").trim()) {
+    return null;
+  }
+
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawFingerprint));
+  return Array.from(new Uint8Array(digest))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
 };
 
 Deno.serve(async (request) => {
@@ -132,6 +156,7 @@ Deno.serve(async (request) => {
 
   try {
     const body = (await request.json()) as LeadPayload;
+    const submitterFingerprint = await createSubmitterFingerprint(request);
 
     const origin = request.headers.get("origin") ?? "";
     const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
@@ -218,21 +243,41 @@ Deno.serve(async (request) => {
       });
     }
 
-    const { count, error: rateError } = await supabase
+    const { count: contractorCount, error: contractorRateError } = await supabase
       .from("lead_events")
       .select("id", { count: "exact", head: true })
       .eq("contractor_id", body.contractor_id)
       .gte("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString());
 
-    if (rateError) {
-      throw rateError;
+    if (contractorRateError) {
+      throw contractorRateError;
     }
 
-    if ((count ?? 0) >= 20) {
-      return new Response(JSON.stringify({ error: "Too many recent submissions. Please try again shortly." }), {
+    if ((contractorCount ?? 0) >= 100) {
+      return new Response(JSON.stringify({ error: "This estimator is receiving unusual traffic right now. Please try again shortly." }), {
         status: 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (submitterFingerprint) {
+      const { count: fingerprintCount, error: fingerprintRateError } = await supabase
+        .from("lead_events")
+        .select("id", { count: "exact", head: true })
+        .eq("contractor_id", body.contractor_id)
+        .eq("submitter_fingerprint", submitterFingerprint)
+        .gte("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString());
+
+      if (fingerprintRateError) {
+        throw fingerprintRateError;
+      }
+
+      if ((fingerprintCount ?? 0) >= 5) {
+        return new Response(JSON.stringify({ error: "Too many recent submissions from this browser. Please wait a few minutes and try again." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const insertPayload = {
@@ -248,7 +293,10 @@ Deno.serve(async (request) => {
       measurement_points: body.measurement_points,
       estimated_total: body.estimated_total,
       selected_products_summary: body.selected_products_summary ?? [],
-      source: "submit",
+      source: body.source,
+      notification_status: "pending",
+      notification_error: null,
+      submitter_fingerprint: submitterFingerprint,
     };
 
     const { data, error } = await supabase
@@ -271,6 +319,8 @@ Deno.serve(async (request) => {
         source,
         status,
         internal_notes,
+        notification_status,
+        notification_error,
         last_contacted_at,
         archived_at,
         deleted_at,
@@ -284,7 +334,7 @@ Deno.serve(async (request) => {
     }
 
     try {
-      await sendLeadNotification({
+      const notificationResult = await sendLeadNotification({
         businessName: String(contractor.business_name ?? "Contractor"),
         contractorSlug: String(contractor.slug ?? ""),
         contractorEmail: String(contractor.email ?? ""),
@@ -299,14 +349,87 @@ Deno.serve(async (request) => {
         selectedProductsSummary: body.selected_products_summary ?? [],
         estimatedTotal: body.estimated_total,
       });
+
+      const { data: updatedLead } = await supabase
+        .from("lead_events")
+        .update({
+          notification_status: notificationResult.status,
+          notification_error: notificationResult.error,
+        })
+        .eq("id", data.id)
+        .select(`
+          id,
+          contractor_id,
+          customer_name,
+          customer_email,
+          customer_phone,
+          customer_address,
+          message,
+          measurement_mode,
+          measurement_value,
+          measurement_unit,
+          measurement_points,
+          estimated_total,
+          selected_products_summary,
+          source,
+          status,
+          internal_notes,
+          notification_status,
+          notification_error,
+          last_contacted_at,
+          archived_at,
+          deleted_at,
+          updated_at,
+          created_at
+        `)
+        .single();
+
+      return new Response(JSON.stringify(updatedLead ?? data), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     } catch (notificationError) {
       console.error(notificationError);
-    }
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      const { data: updatedLead } = await supabase
+        .from("lead_events")
+        .update({
+          notification_status: "failed",
+          notification_error: notificationError instanceof Error ? notificationError.message : "Lead email notification failed.",
+        })
+        .eq("id", data.id)
+        .select(`
+          id,
+          contractor_id,
+          customer_name,
+          customer_email,
+          customer_phone,
+          customer_address,
+          message,
+          measurement_mode,
+          measurement_value,
+          measurement_unit,
+          measurement_points,
+          estimated_total,
+          selected_products_summary,
+          source,
+          status,
+          internal_notes,
+          notification_status,
+          notification_error,
+          last_contacted_at,
+          archived_at,
+          deleted_at,
+          updated_at,
+          created_at
+        `)
+        .single();
+
+      return new Response(JSON.stringify(updatedLead ?? data), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   } catch (error) {
     return new Response(
       JSON.stringify({

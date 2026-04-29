@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { TurnstileWidget } from "./TurnstileWidget";
 import { buildResultMessage, currency, estimateProductSubtotal } from "../lib/estimate";
 import { submitLeadEvent } from "../lib/repository";
-import type { ContractorRecord, MeasurementResult, Product } from "../types";
+import type { ContractorRecord, LeadSource, MeasurementResult, Product } from "../types";
 
 interface ResultComposerProps {
   contractor: ContractorRecord;
@@ -28,7 +28,9 @@ export const ResultComposer = ({
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileNonce, setTurnstileNonce] = useState(0);
   const [copyLabel, setCopyLabel] = useState("Copy result");
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [emailLabel, setEmailLabel] = useState("Email contractor");
+  const [activeAction, setActiveAction] = useState<LeadSource | null>(null);
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
 
   const estimatedTotal = useMemo(() => {
@@ -54,49 +56,45 @@ export const ResultComposer = ({
       siteNotes: "Add any gate width, slope, retaining walls, awkward corners, or boundary notes here.",
     });
   }, [contractor, customerAddress, customerName, measurement, selectedProducts]);
-  const [message, setMessage] = useState(generatedMessage);
-  const [hasEditedMessage, setHasEditedMessage] = useState(false);
+  const [messageOverride, setMessageOverride] = useState<string | null>(null);
+  const message = messageOverride ?? generatedMessage;
 
-  useEffect(() => {
-    if (!hasEditedMessage) {
-      setMessage(generatedMessage);
-    }
-  }, [generatedMessage, hasEditedMessage]);
-
-  const copyMessage = async () => {
-    await navigator.clipboard.writeText(message);
-    setCopyLabel("Copied");
-    window.setTimeout(() => setCopyLabel("Copy result"), 1800);
-  };
-
-  const submitLead = async () => {
+  const validateLead = () => {
     if (!customerName.trim()) {
       setError("Please enter your name so the contractor knows who to contact.");
-      return;
+      return false;
     }
 
     if (!customerAddress.trim()) {
       setError("Please enter the fence site address so the contractor knows where the job is located.");
-      return;
+      return false;
     }
 
     if (!measurement) {
       setError("Please save your fence length before sending the enquiry.");
-      return;
+      return false;
     }
 
     if (!customerEmail.trim() && !customerPhone.trim()) {
       setError("Please enter an email address or phone number so the contractor can reply.");
-      return;
+      return false;
     }
 
     if (!turnstileToken) {
       setError("The secure enquiry check is not ready yet. Please try again, or use copy/email instead.");
-      return;
+      return false;
     }
 
-    setSubmitStatus("saving");
     setError(null);
+    return true;
+  };
+
+  const persistLead = async (source: LeadSource) => {
+    if (!validateLead()) {
+      return false;
+    }
+
+    setActiveAction(source);
     try {
       await submitLeadEvent({
         contractorId: contractor.id,
@@ -108,21 +106,52 @@ export const ResultComposer = ({
         measurement,
         estimatedTotal: estimatedTotal || null,
         selectedProductsSummary,
+        source,
         turnstileToken,
       });
-      setSubmitStatus("saved");
+      if (source === "submit") {
+        setSubmitStatus("saved");
+      }
       setCustomerEmail("");
       setCustomerPhone("");
       onCustomerNameChange("");
       onCustomerAddressChange("");
-      setMessage(generatedMessage);
-      setHasEditedMessage(false);
+      setMessageOverride(null);
       setTurnstileToken("");
       setTurnstileNonce((current) => current + 1);
+      return true;
     } catch (leadError) {
       setError(leadError instanceof Error ? leadError.message : "Unable to submit lead.");
-      setSubmitStatus("idle");
+      return false;
+    } finally {
+      setActiveAction(null);
     }
+  };
+
+  const copyMessage = async () => {
+    const wasSaved = await persistLead("copy");
+    if (!wasSaved) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(message);
+    setCopyLabel("Copied and saved");
+    window.setTimeout(() => setCopyLabel("Copy result"), 1800);
+  };
+
+  const emailContractor = async () => {
+    const wasSaved = await persistLead("email");
+    if (!wasSaved) {
+      return;
+    }
+
+    window.location.href = `mailto:${contractor.contact.email}?subject=Fence%20estimate%20request&body=${encodeURIComponent(message)}`;
+    setEmailLabel("Saved and opened");
+    window.setTimeout(() => setEmailLabel("Email contractor"), 1800);
+  };
+
+  const submitLead = async () => {
+    await persistLead("submit");
   };
 
   return (
@@ -207,11 +236,10 @@ export const ResultComposer = ({
         className="result-area"
         value={message}
         onChange={(event) => {
-          setMessage(event.target.value);
-          setHasEditedMessage(true);
+          setMessageOverride(event.target.value);
         }}
       />
-      {submitStatus === "saved" ? (
+          {submitStatus === "saved" ? (
         <div className="success-panel">
           <strong>Enquiry sent.</strong>
           <p>The contractor has received your fence details and can follow up from the admin portal.</p>
@@ -225,14 +253,14 @@ export const ResultComposer = ({
 
       <div className="action-row stretch">
         <button type="button" className="primary" onClick={() => void copyMessage()}>
-          {copyLabel}
+          {activeAction === "copy" ? "Saving..." : copyLabel}
         </button>
-        <button type="button" onClick={() => void submitLead()} disabled={submitStatus === "saving" || submitStatus === "saved"}>
-          {submitStatus === "saving" ? "Sending..." : submitStatus === "saved" ? "Enquiry sent" : "Send enquiry"}
+        <button type="button" onClick={() => void submitLead()} disabled={activeAction !== null || submitStatus === "saved"}>
+          {activeAction === "submit" ? "Sending..." : submitStatus === "saved" ? "Enquiry sent" : "Send enquiry"}
         </button>
-        <a href={`mailto:${contractor.contact.email}?subject=Fence%20estimate%20request&body=${encodeURIComponent(message)}`}>
-          Email contractor
-        </a>
+        <button type="button" onClick={() => void emailContractor()} disabled={activeAction !== null}>
+          {activeAction === "email" ? "Saving..." : emailLabel}
+        </button>
       </div>
 
       {error ? <p className="error-text">{error}</p> : null}

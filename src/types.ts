@@ -1,4 +1,4 @@
-export type MeasurementMode = "distance" | "area";
+export type MeasurementMode = "distance";
 
 export interface MapPoint {
   lat: number;
@@ -70,6 +70,8 @@ export interface SelectedProduct {
 }
 
 export type LeadStatus = "new" | "contacted" | "quoted" | "won" | "lost";
+export type LeadSource = "copy" | "email" | "submit";
+export type LeadNotificationStatus = "pending" | "sent" | "skipped" | "failed";
 
 export interface LeadRecord {
   id: string;
@@ -85,9 +87,11 @@ export interface LeadRecord {
   measurementPoints: MapPoint[];
   estimatedTotal: number | null;
   selectedProductsSummary: string[];
-  source: "copy" | "submit";
+  source: LeadSource;
   status: LeadStatus;
   internalNotes: string;
+  notificationStatus: LeadNotificationStatus;
+  notificationError: string | null;
   lastContactedAt: string | null;
   archivedAt: string | null;
   deletedAt: string | null;
@@ -122,4 +126,11 @@ export interface OnboardingContext {
   contractor: ContractorRecord;
   onboarding: OnboardingProgressRecord;
   subscription: SubscriptionRecord | null;
+}
+
+export interface ContractorOpsStatus {
+  contractorEmail: string;
+  leadEmailConfigured: boolean;
+  resendConfigured: boolean;
+  turnstileConfigured: boolean;
 }
