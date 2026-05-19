@@ -401,6 +401,17 @@ h2 {
   background: var(--surface-strong);
   color: var(--ink-strong);
   font-weight: 600;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.card-links a:hover,
+.admin-hero-links a:hover,
+.admin-hero-links button:not(:disabled):hover,
+.action-row a:hover,
+.action-row button:not(:disabled):hover,
+.button-link:hover {
+  background: var(--surface-muted);
+  border-color: rgba(11, 31, 26, 0.28);
 }
 
 .action-row.stretch > * {
@@ -416,6 +427,14 @@ a.primary,
 .button-link.primary {
   background: var(--brand-accent);
   color: var(--brand-dark);
+  border-color: var(--brand-dark);
+}
+
+button.primary:not(:disabled):hover,
+a.primary:hover,
+.action-row .primary:not(:disabled):hover,
+.button-link.primary:hover {
+  background: color-mix(in srgb, var(--brand-accent) 88%, #000);
   border-color: var(--brand-dark);
 }
 
@@ -645,6 +664,24 @@ select {
   padding: 12px 14px;
   background: var(--surface-strong);
   color: var(--ink-strong);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(29, 79, 65, 0.12);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
 }
 
 .color-field {
@@ -1042,6 +1079,65 @@ select {
 .success-text {
   color: #285f49;
   margin-bottom: 0;
+}
+
+/* ── Missing utility classes ─────────────────────────────────────── */
+
+.hero-support-text {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+
+.hero-card-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+/* helper-panel — subtle tint for secondary info panels */
+.helper-panel {
+  background: rgba(247, 245, 242, 0.6);
+}
+
+/* portal-section — no extra chrome, inherits from .panel */
+.portal-section {
+  margin-top: 4px;
+}
+
+/* ── Lead table small-button hover ──────────────────────────────── */
+.lead-expand-button:not(:disabled):hover,
+.lead-action-row button:not(:disabled):hover,
+.lead-action-row a:hover {
+  background: var(--surface-muted);
+  border-color: rgba(11, 31, 26, 0.28);
+}
+
+/* ── Share-actions button hover ─────────────────────────────────── */
+.share-actions button:not(:disabled):hover {
+  background: var(--surface-muted);
+  border-color: rgba(11, 31, 26, 0.28);
+}
+
+/* ── Nav bar bottom rule ─────────────────────────────────────────── */
+.landing-nav {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ── Auth card extra padding on larger screens ───────────────────── */
+@media (min-width: 520px) {
+  .auth-card {
+    padding: 36px 40px;
+  }
+}
+
+/* ── Price strip rounded corners ─────────────────────────────────── */
+.price-strip {
+  border-radius: 8px;
 }
 
 @media (max-width: 1024px) {

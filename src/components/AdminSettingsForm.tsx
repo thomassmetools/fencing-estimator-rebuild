@@ -98,15 +98,15 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
         </label>
         <label className="field-stack">
           <span>Phone</span>
-          <input value={draft.contact.phone} onChange={(event) => updateField("contact", "phone", event.target.value)} />
+          <input type="tel" value={draft.contact.phone} onChange={(event) => updateField("contact", "phone", event.target.value)} />
         </label>
         <label className="field-stack">
           <span>Email</span>
-          <input value={draft.contact.email} onChange={(event) => updateField("contact", "email", event.target.value)} />
+          <input type="email" value={draft.contact.email} onChange={(event) => updateField("contact", "email", event.target.value)} />
         </label>
         <label className="field-stack">
           <span>Website</span>
-          <input value={draft.contact.website} onChange={(event) => updateField("contact", "website", event.target.value)} />
+          <input type="url" value={draft.contact.website} onChange={(event) => updateField("contact", "website", event.target.value)} />
         </label>
         <label className="field-stack">
           <span>Customer measurements</span>
@@ -131,7 +131,7 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
         </label>
         <label className="field-stack full-span">
           <span>Facebook URL</span>
-          <input value={draft.contact.facebookUrl} onChange={(event) => updateField("contact", "facebookUrl", event.target.value)} />
+          <input type="url" value={draft.contact.facebookUrl} onChange={(event) => updateField("contact", "facebookUrl", event.target.value)} />
         </label>
         <label className="field-stack full-span">
           <span>Hero label</span>

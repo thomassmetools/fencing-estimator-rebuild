@@ -283,15 +283,15 @@ export const OnboardingPage = () => {
             </label>
             <label className="field-stack">
               <span>Phone</span>
-              <input value={draft.contact.phone} onChange={(event) => updateContact("phone", event.target.value)} />
+              <input type="tel" value={draft.contact.phone} onChange={(event) => updateContact("phone", event.target.value)} />
             </label>
             <label className="field-stack">
               <span>Email</span>
-              <input value={draft.contact.email} onChange={(event) => updateContact("email", event.target.value)} />
+              <input type="email" value={draft.contact.email} onChange={(event) => updateContact("email", event.target.value)} />
             </label>
             <label className="field-stack">
               <span>Website</span>
-              <input value={draft.contact.website} onChange={(event) => updateContact("website", event.target.value)} />
+              <input type="url" value={draft.contact.website} onChange={(event) => updateContact("website", event.target.value)} />
             </label>
             <label className="field-stack">
               <span>Customer measurements</span>
@@ -302,7 +302,7 @@ export const OnboardingPage = () => {
             </label>
             <label className="field-stack full-span">
               <span>Facebook URL</span>
-              <input value={draft.contact.facebookUrl} onChange={(event) => updateContact("facebookUrl", event.target.value)} />
+              <input type="url" value={draft.contact.facebookUrl} onChange={(event) => updateContact("facebookUrl", event.target.value)} />
             </label>
             <label className="field-stack full-span">
               <span>Hero label</span>

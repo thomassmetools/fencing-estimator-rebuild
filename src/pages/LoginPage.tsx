@@ -75,11 +75,11 @@ export const LoginPage = () => {
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="field-stack">
             <span>Email</span>
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </label>
           <label className="field-stack">
             <span>Password</span>
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+            <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </label>
           {error ? <p className="error-text">{error}</p> : null}
           {linkMessage ? <p className="success-text">{linkMessage}</p> : null}
