@@ -468,33 +468,8 @@ export const replaceProducts = async (contractorId: string, products: Product[])
     throw new Error("Supabase is not configured.");
   }
 
-  const { data: existingRows, error: existingError } = await supabase
-    .from("products")
-    .select("id")
-    .eq("contractor_id", contractorId);
-
-  if (existingError) {
-    throw existingError;
-  }
-
-  const nextIds = products.map((product) => product.id);
-  const existingIds = (existingRows ?? []).map((row) => row.id as string);
-  const idsToDelete = existingIds.filter((id) => !nextIds.includes(id));
-
-  if (idsToDelete.length > 0) {
-    const { error: deleteError } = await supabase.from("products").delete().in("id", idsToDelete);
-    if (deleteError) {
-      throw deleteError;
-    }
-  }
-
-  if (products.length === 0) {
-    return;
-  }
-
-  const upsertPayload = products.map((product, index) => ({
+  const payload = products.map((product, index) => ({
     id: product.id,
-    contractor_id: contractorId,
     name: product.name,
     description: product.description,
     unit: product.unit,
@@ -503,10 +478,13 @@ export const replaceProducts = async (contractorId: string, products: Product[])
     display_order: index,
   }));
 
-  const { error: upsertError } = await supabase.from("products").upsert(upsertPayload, { onConflict: "id" });
+  const { error } = await supabase.rpc("replace_contractor_products", {
+    p_contractor_id: contractorId,
+    p_products: payload,
+  });
 
-  if (upsertError) {
-    throw upsertError;
+  if (error) {
+    throw error;
   }
 };
 
