@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
-import { currency } from "../lib/estimate";
+import { createCurrencyFormatter } from "../lib/estimate";
+import type { ContractorCurrency } from "../types";
 import { LeadMeasurementMap } from "./LeadMeasurementMap";
 import type { LeadRecord, LeadStatus } from "../types";
 
@@ -7,6 +8,7 @@ interface AdminLeadListProps {
   leads: LeadRecord[];
   isLoading: boolean;
   error: string | null;
+  currency: ContractorCurrency;
   onRefresh: () => Promise<void>;
   onUpdateLead: (
     leadId: string,
@@ -76,7 +78,8 @@ const notificationSummary = (lead: LeadRecord) => {
   }
 };
 
-export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead }: AdminLeadListProps) => {
+export const AdminLeadList = ({ leads, isLoading, error, currency, onRefresh, onUpdateLead }: AdminLeadListProps) => {
+  const formatAmount = useMemo(() => createCurrencyFormatter(currency), [currency]);
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
@@ -224,7 +227,7 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
         </div>
         <div className="lead-stat-card">
           <span className="summary-label">Open value</span>
-          <strong>{leadStats.openValue > 0 ? currency.format(leadStats.openValue) : "$0"}</strong>
+          <strong>{leadStats.openValue > 0 ? formatAmount(leadStats.openValue) : "$0"}</strong>
         </div>
       </div>
 
@@ -269,7 +272,7 @@ export const AdminLeadList = ({ leads, isLoading, error, onRefresh, onUpdateLead
                       </td>
                       <td>{contactSummary(lead)}</td>
                       <td>{formatMeasurement(lead)}</td>
-                      <td>{lead.estimatedTotal ? currency.format(lead.estimatedTotal) : "Not calculated"}</td>
+                      <td>{lead.estimatedTotal ? formatAmount(lead.estimatedTotal) : "Not calculated"}</td>
                       <td>
                         <select
                           value={lead.status}

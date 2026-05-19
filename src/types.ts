@@ -6,6 +6,7 @@ export interface MapPoint {
 }
 
 export type MeasurementSystem = "metric" | "imperial";
+export type ContractorCurrency = "NZD" | "USD" | "AUD" | "CAD" | "GBP";
 export type ProductUnit = "lineal metre" | "metre squared" | "lineal foot" | "square foot" | "each";
 
 export interface Product {
@@ -42,6 +43,7 @@ export interface ContractorRecord {
   id: string;
   slug: string;
   measurementSystem: MeasurementSystem;
+  currency: ContractorCurrency;
   branding: ContractorBranding;
   contact: ContractorContact;
   resultTemplate: ResultTemplate;

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { TurnstileWidget } from "./TurnstileWidget";
-import { buildResultMessage, currency, estimateProductSubtotal } from "../lib/estimate";
+import { buildResultMessage, estimateProductSubtotal } from "../lib/estimate";
 import { submitLeadEvent } from "../lib/repository";
 import type { ContractorRecord, LeadSource, MeasurementResult, Product } from "../types";
 
@@ -12,6 +12,7 @@ interface ResultComposerProps {
   customerAddress: string;
   onCustomerNameChange: (value: string) => void;
   onCustomerAddressChange: (value: string) => void;
+  formatAmount: (n: number) => string;
 }
 
 export const ResultComposer = ({
@@ -22,6 +23,7 @@ export const ResultComposer = ({
   customerAddress,
   onCustomerNameChange,
   onCustomerAddressChange,
+  formatAmount,
 }: ResultComposerProps) => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -228,7 +230,7 @@ export const ResultComposer = ({
         </div>
         <div>
           <span className="summary-label">Estimated material total</span>
-          <strong>{estimatedTotal > 0 ? currency.format(estimatedTotal) : "Not calculated"}</strong>
+          <strong>{estimatedTotal > 0 ? formatAmount(estimatedTotal) : "Not calculated"}</strong>
         </div>
       </div>
 

@@ -1,10 +1,29 @@
-import type { MeasurementResult, Product } from "../types";
+import type { ContractorCurrency, MeasurementResult, Product } from "../types";
 
-export const currency = new Intl.NumberFormat("en-NZ", {
-  style: "currency",
-  currency: "NZD",
-  maximumFractionDigits: 0,
-});
+export const SUPPORTED_CURRENCIES: { code: ContractorCurrency; label: string }[] = [
+  { code: "NZD", label: "NZD — New Zealand Dollar" },
+  { code: "USD", label: "USD — US Dollar" },
+  { code: "AUD", label: "AUD — Australian Dollar" },
+  { code: "CAD", label: "CAD — Canadian Dollar" },
+  { code: "GBP", label: "GBP — British Pound" },
+];
+
+const CURRENCY_LOCALES: Record<ContractorCurrency, string> = {
+  NZD: "en-NZ",
+  USD: "en-US",
+  AUD: "en-AU",
+  CAD: "en-CA",
+  GBP: "en-GB",
+};
+
+export const createCurrencyFormatter = (currencyCode: ContractorCurrency) => {
+  const fmt = new Intl.NumberFormat(CURRENCY_LOCALES[currencyCode] ?? "en", {
+    style: "currency",
+    currency: currencyCode,
+    maximumFractionDigits: 0,
+  });
+  return (n: number) => fmt.format(n);
+};
 
 export const estimateProductSubtotal = (product: Product, quantity: number) => {
   return product.basePrice * quantity;

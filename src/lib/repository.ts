@@ -3,6 +3,7 @@ import { getSupabaseAnonKey, getSupabaseClient, getSupabaseUrl, isSupabaseConfig
 import type {
   AdminAccessRecord,
   BillingEventRecord,
+  ContractorCurrency,
   ContractorRecord,
   ContractorOpsStatus,
   LeadNotificationStatus,
@@ -21,6 +22,7 @@ type ContractorRow = {
   id: string;
   slug: string;
   measurement_system: MeasurementSystem;
+  currency: ContractorCurrency;
   business_name: string;
   phone: string;
   email: string;
@@ -128,6 +130,7 @@ const contractorColumns = `
   id,
   slug,
   measurement_system,
+  currency,
   business_name,
   phone,
   email,
@@ -194,6 +197,7 @@ const mapContractor = (row: ContractorRow, products: ProductRow[]): ContractorRe
     id: row.id,
     slug: row.slug,
     measurementSystem: row.measurement_system ?? "metric",
+    currency: row.currency ?? "NZD",
     branding: {
       primaryColor: row.primary_color,
       accentColor: row.accent_color,
@@ -428,6 +432,7 @@ export const updateContractorSettings = async (contractor: ContractorRecord) => 
     website: contractor.contact.website,
     facebook_url: contractor.contact.facebookUrl,
     measurement_system: contractor.measurementSystem,
+    currency: contractor.currency,
     primary_color: contractor.branding.primaryColor,
     accent_color: contractor.branding.accentColor,
     hero_label: contractor.branding.heroLabel,
@@ -894,37 +899,10 @@ export const claimOnboardingContext = async (): Promise<OnboardingContext | null
         }
 
         return {
-          contractor: {
-            id: responseBody.contractor.id,
-            slug: responseBody.contractor.slug,
-            measurementSystem: responseBody.contractor.measurement_system ?? "metric",
-            branding: {
-              primaryColor: responseBody.contractor.primary_color,
-              accentColor: responseBody.contractor.accent_color,
-              heroLabel: responseBody.contractor.hero_label,
-              introText: responseBody.contractor.intro_text,
-            },
-            contact: {
-              businessName: responseBody.contractor.business_name,
-              phone: responseBody.contractor.phone,
-              email: responseBody.contractor.email,
-              website: responseBody.contractor.website,
-              facebookUrl: responseBody.contractor.facebook_url,
-            },
-            resultTemplate: {
-              openingLine: responseBody.contractor.opening_line,
-              closingLine: responseBody.contractor.closing_line,
-              includePricingDisclaimer: responseBody.contractor.include_pricing_disclaimer,
-            },
-            products: (responseBody.products ?? []).map((product: ProductRow) => ({
-              id: product.id,
-              name: product.name,
-              description: product.description,
-              unit: product.unit,
-              basePrice: Number(product.base_price),
-              isFeatured: product.is_featured,
-            })),
-          },
+          contractor: mapContractor(
+            responseBody.contractor as ContractorRow,
+            (responseBody.products ?? []) as ProductRow[],
+          ),
           onboarding: mapOnboarding(responseBody.onboarding as OnboardingRow),
           subscription: responseBody.subscription ? mapSubscription(responseBody.subscription as SubscriptionRow) : null,
         };

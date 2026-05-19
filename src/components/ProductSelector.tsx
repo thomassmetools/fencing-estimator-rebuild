@@ -1,4 +1,4 @@
-import { currency, estimateProductSubtotal } from "../lib/estimate";
+import { estimateProductSubtotal } from "../lib/estimate";
 import type { Product, SelectedProduct } from "../types";
 
 interface ProductSelectorProps {
@@ -9,6 +9,7 @@ interface ProductSelectorProps {
   measuredProductId: string | null;
   onMeasuredProductChange: (productId: string | null) => void;
   canApplyMeasurement: boolean;
+  formatAmount: (n: number) => string;
 }
 
 export const ProductSelector = ({
@@ -19,6 +20,7 @@ export const ProductSelector = ({
   measuredProductId,
   onMeasuredProductChange,
   canApplyMeasurement,
+  formatAmount,
 }: ProductSelectorProps) => {
   const updateSelection = (productId: string, quantity: number) => {
     if (quantity <= 0) {
@@ -66,9 +68,9 @@ export const ProductSelector = ({
                 <p>{product.description}</p>
                 <div className="product-meta">
                   <span>
-                    {currency.format(product.basePrice)} / {product.unit}
+                    {formatAmount(product.basePrice)} / {product.unit}
                   </span>
-                  <span>{quantity > 0 ? `Subtotal ${currency.format(estimateProductSubtotal(product, quantity))}` : "Not selected"}</span>
+                  <span>{quantity > 0 ? `Subtotal ${formatAmount(estimateProductSubtotal(product, quantity))}` : "Not selected"}</span>
                 </div>
               </div>
               {product.unit === "lineal metre" || product.unit === "lineal foot" ? (

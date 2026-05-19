@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { ContractorRecord, MeasurementSystem } from "../types";
+import type { ContractorCurrency, ContractorRecord, MeasurementSystem } from "../types";
+import { SUPPORTED_CURRENCIES } from "../lib/estimate";
 import { validateContractor } from "../lib/validation";
 
 interface AdminSettingsFormProps {
@@ -28,10 +29,11 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
   };
 
   const updateMeasurementSystem = (measurementSystem: MeasurementSystem) => {
-    setDraft((current) => ({
-      ...current,
-      measurementSystem,
-    }));
+    setDraft((current) => ({ ...current, measurementSystem }));
+  };
+
+  const updateCurrency = (currency: ContractorCurrency) => {
+    setDraft((current) => ({ ...current, currency }));
   };
 
   const renderColorField = (
@@ -114,6 +116,17 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
           >
             <option value="metric">Metric (metres)</option>
             <option value="imperial">Imperial (feet)</option>
+          </select>
+        </label>
+        <label className="field-stack">
+          <span>Pricing currency</span>
+          <select
+            value={draft.currency}
+            onChange={(event) => updateCurrency(event.target.value as ContractorCurrency)}
+          >
+            {SUPPORTED_CURRENCIES.map(({ code, label }) => (
+              <option key={code} value={code}>{label}</option>
+            ))}
           </select>
         </label>
         <label className="field-stack full-span">

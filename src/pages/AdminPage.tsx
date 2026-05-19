@@ -268,6 +268,7 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
         leads={leads}
         isLoading={isLoadingLeads}
         error={leadsError}
+        currency={contractor.currency}
         onRefresh={() => loadLeads(contractor.id)}
         onUpdateLead={updateLead}
       />

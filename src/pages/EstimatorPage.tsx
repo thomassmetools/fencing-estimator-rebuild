@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { MapMeasurePanel } from "../components/MapMeasurePanel";
 import { ProductSelector } from "../components/ProductSelector";
 import { ResultComposer } from "../components/ResultComposer";
+import { createCurrencyFormatter } from "../lib/estimate";
 import type { ContractorRecord, MeasurementResult, Product, SelectedProduct } from "../types";
 
 interface EstimatorPageProps {
@@ -18,6 +19,11 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [measuredProductId, setMeasuredProductId] = useState<string | null>(null);
+
+  const formatAmount = useMemo(
+    () => createCurrencyFormatter(contractor?.currency ?? "NZD"),
+    [contractor?.currency],
+  );
 
   const measuredLengthByUnit = useMemo(() => {
     if (!measurement || measurement.mode !== "distance") {
@@ -172,6 +178,7 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
             measuredProductId={measuredProductId}
             onMeasuredProductChange={handleMeasuredProductChange}
             canApplyMeasurement={Boolean(measuredLengthByUnit)}
+            formatAmount={formatAmount}
           />
           <ResultComposer
             contractor={contractor}
@@ -181,6 +188,7 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
             customerAddress={customerAddress}
             onCustomerNameChange={setCustomerName}
             onCustomerAddressChange={setCustomerAddress}
+            formatAmount={formatAmount}
           />
         </aside>
       </section>
