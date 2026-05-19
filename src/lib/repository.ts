@@ -229,15 +229,6 @@ const mapContractor = (row: ContractorRow, products: ProductRow[]): ContractorRe
   };
 };
 
-const groupProducts = (products: ProductRow[]) => {
-  const map = new Map<string, ProductRow[]>();
-  products.forEach((product) => {
-    const current = map.get(product.contractor_id) ?? [];
-    current.push(product);
-    map.set(product.contractor_id, current);
-  });
-  return map;
-};
 
 const mapLead = (row: LeadRow): LeadRecord => ({
   id: row.id,
@@ -309,24 +300,9 @@ const mapBillingEvent = (row: BillingEventRow): BillingEventRecord => ({
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
-const fetchProductsForContractors = async (contractorIds: string[]) => {
-  const supabase = getSupabaseClient();
-  if (!supabase || contractorIds.length === 0) {
-    return [] satisfies ProductRow[];
-  }
+const contractorWithProductsColumns = `${contractorColumns}, products:products(${productColumns})`;
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(productColumns)
-    .in("contractor_id", contractorIds)
-    .order("display_order", { ascending: true });
-
-  if (error) {
-    throw error;
-  }
-
-  return (data ?? []) as ProductRow[];
-};
+type ContractorRowWithProducts = ContractorRow & { products: ProductRow[] };
 
 export const fetchPublicContractors = async (): Promise<ContractorRecord[]> => {
   if (!isSupabaseConfigured) {
@@ -340,19 +316,18 @@ export const fetchPublicContractors = async (): Promise<ContractorRecord[]> => {
 
   const { data, error } = await supabase
     .from("contractors")
-    .select(contractorColumns)
+    .select(contractorWithProductsColumns)
     .eq("is_published", true)
-    .order("business_name", { ascending: true });
+    .order("business_name", { ascending: true })
+    .order("display_order", { ascending: true, referencedTable: "products" });
 
   if (error) {
     throw error;
   }
 
-  const contractorRows = (data ?? []) as ContractorRow[];
-  const products = await fetchProductsForContractors(contractorRows.map((row) => row.id));
-  const productsByContractor = groupProducts(products);
-
-  return contractorRows.map((row) => mapContractor(row, productsByContractor.get(row.id) ?? []));
+  return (data as ContractorRowWithProducts[]).map((row) =>
+    mapContractor(row, row.products ?? []),
+  );
 };
 
 export const fetchAdminContractor = async (slug: string, authUserId: string): Promise<ContractorRecord | null> => {
@@ -363,8 +338,9 @@ export const fetchAdminContractor = async (slug: string, authUserId: string): Pr
 
   const { data: contractorRow, error: contractorError } = await supabase
     .from("contractors")
-    .select(contractorColumns)
+    .select(contractorWithProductsColumns)
     .eq("slug", slug)
+    .order("display_order", { ascending: true, referencedTable: "products" })
     .single();
 
   if (contractorError) {
@@ -389,8 +365,8 @@ export const fetchAdminContractor = async (slug: string, authUserId: string): Pr
     return null;
   }
 
-  const products = await fetchProductsForContractors([contractorRow.id]);
-  return mapContractor(contractorRow as ContractorRow, products);
+  const row = contractorRow as ContractorRowWithProducts;
+  return mapContractor(row, row.products ?? []);
 };
 
 export const fetchAdminAccessRecords = async (authUserId: string): Promise<AdminAccessRecord[]> => {
@@ -765,7 +741,12 @@ export const sendContractorTestLeadEmail = async (contractorId: string) => {
   return responseBody as { message: string };
 };
 
-export const fetchLeadEvents = async (contractorId: string): Promise<LeadRecord[]> => {
+const LEADS_PAGE_SIZE = 25;
+
+export const fetchLeadEvents = async (
+  contractorId: string,
+  offset = 0,
+): Promise<{ leads: LeadRecord[]; hasMore: boolean }> => {
   const supabase = getSupabaseClient();
   if (!supabase) {
     throw new Error("Supabase is not configured.");
@@ -777,13 +758,17 @@ export const fetchLeadEvents = async (contractorId: string): Promise<LeadRecord[
     .eq("contractor_id", contractorId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(offset, offset + LEADS_PAGE_SIZE);
 
   if (error) {
     throw error;
   }
 
-  return ((data ?? []) as LeadRow[]).map(mapLead);
+  const rows = (data ?? []) as LeadRow[];
+  return {
+    leads: rows.slice(0, LEADS_PAGE_SIZE).map(mapLead),
+    hasMore: rows.length > LEADS_PAGE_SIZE,
+  };
 };
 
 export const updateLeadEvent = async (

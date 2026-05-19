@@ -7,6 +7,16 @@ import { ResultComposer } from "../components/ResultComposer";
 import { createCurrencyFormatter } from "../lib/estimate";
 import type { ContractorRecord, MeasurementResult, Product, SelectedProduct } from "../types";
 
+const computeMeasuredLengths = (measurement: MeasurementResult | null) => {
+  if (!measurement || measurement.mode !== "distance") return null;
+  return {
+    "lineal metre": Math.ceil(measurement.baseValue),
+    "lineal foot": Math.ceil(
+      measurement.unitLabel === "ft" ? measurement.value : measurement.baseValue * 3.28084,
+    ),
+  };
+};
+
 interface EstimatorPageProps {
   contractorMap: Map<string, ContractorRecord>;
 }
@@ -25,16 +35,7 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
     [contractor?.currency],
   );
 
-  const measuredLengthByUnit = useMemo(() => {
-    if (!measurement || measurement.mode !== "distance") {
-      return null;
-    }
-
-    return {
-      "lineal metre": Math.ceil(measurement.baseValue),
-      "lineal foot": Math.ceil(measurement.unitLabel === "ft" ? measurement.value : measurement.baseValue * 3.28084),
-    };
-  }, [measurement]);
+  const measuredLengthByUnit = useMemo(() => computeMeasuredLengths(measurement), [measurement]);
 
   const selectedProductDetails = useMemo(() => {
     if (!contractor) {
@@ -54,10 +55,8 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
       return;
     }
 
-    const nextMeasuredLengthByUnit = {
-      "lineal metre": Math.ceil(nextMeasurement.baseValue),
-      "lineal foot": Math.ceil(nextMeasurement.unitLabel === "ft" ? nextMeasurement.value : nextMeasurement.baseValue * 3.28084),
-    };
+    const nextMeasuredLengthByUnit = computeMeasuredLengths(nextMeasurement);
+    if (!nextMeasuredLengthByUnit) return;
     const measuredProduct = contractor.products.find((product) => product.id === nextMeasuredProductId);
     if (!measuredProduct || (measuredProduct.unit !== "lineal metre" && measuredProduct.unit !== "lineal foot")) {
       return;

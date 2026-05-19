@@ -9,7 +9,9 @@ interface AdminLeadListProps {
   isLoading: boolean;
   error: string | null;
   currency: ContractorCurrency;
+  hasMore: boolean;
   onRefresh: () => Promise<void>;
+  onLoadMore: () => Promise<void>;
   onUpdateLead: (
     leadId: string,
     updates: Partial<{
@@ -78,7 +80,7 @@ const notificationSummary = (lead: LeadRecord) => {
   }
 };
 
-export const AdminLeadList = ({ leads, isLoading, error, currency, onRefresh, onUpdateLead }: AdminLeadListProps) => {
+export const AdminLeadList = ({ leads, isLoading, error, currency, hasMore, onRefresh, onLoadMore, onUpdateLead }: AdminLeadListProps) => {
   const formatAmount = useMemo(() => createCurrencyFormatter(currency), [currency]);
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -373,6 +375,14 @@ export const AdminLeadList = ({ leads, isLoading, error, currency, onRefresh, on
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {hasMore && (
+        <div className="admin-footer">
+          <button type="button" onClick={() => void onLoadMore()} disabled={isLoading}>
+            {isLoading ? "Loading..." : "Load more leads"}
+          </button>
         </div>
       )}
     </section>

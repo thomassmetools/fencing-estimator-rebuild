@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useContractorStore } from "./hooks/useContractorStore";
 
 const HomePage = lazy(() => import("./pages/HomePage").then((module) => ({ default: module.HomePage })));
@@ -49,6 +50,7 @@ function App() {
   }
 
   return (
+    <ErrorBoundary>
     <Suspense
       fallback={
         <main className="page-shell loading-shell">
@@ -74,6 +76,7 @@ function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
+    </ErrorBoundary>
   );
 }
 

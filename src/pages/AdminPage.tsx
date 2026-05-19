@@ -31,6 +31,8 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
   const [settingsStatus, setSettingsStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [productsStatus, setProductsStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [leads, setLeads] = useState<LeadRecord[]>([]);
+  const [leadsOffset, setLeadsOffset] = useState(0);
+  const [hasMoreLeads, setHasMoreLeads] = useState(false);
   const [isLoadingLeads, setIsLoadingLeads] = useState(false);
   const [leadsError, setLeadsError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
@@ -57,12 +59,14 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
     window.setTimeout(() => setShareStatus(null), 1800);
   };
 
-  const loadLeads = async (contractorId: string) => {
+  const loadLeads = async (contractorId: string, offset = 0) => {
     setIsLoadingLeads(true);
     setLeadsError(null);
     try {
-      const nextLeads = await fetchLeadEvents(contractorId);
-      setLeads(nextLeads);
+      const { leads: nextLeads, hasMore } = await fetchLeadEvents(contractorId, offset);
+      setLeads((current) => (offset === 0 ? nextLeads : [...current, ...nextLeads]));
+      setLeadsOffset(offset + nextLeads.length);
+      setHasMoreLeads(hasMore);
     } catch (loadError) {
       setLeadsError(loadError instanceof Error ? loadError.message : "Unable to load leads.");
     } finally {
@@ -269,7 +273,9 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
         isLoading={isLoadingLeads}
         error={leadsError}
         currency={contractor.currency}
-        onRefresh={() => loadLeads(contractor.id)}
+        hasMore={hasMoreLeads}
+        onRefresh={() => loadLeads(contractor.id, 0)}
+        onLoadMore={() => loadLeads(contractor.id, leadsOffset)}
         onUpdateLead={updateLead}
       />
     </main>
