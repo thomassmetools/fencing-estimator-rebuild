@@ -46,7 +46,7 @@ const MapViewController = ({
 
   useEffect(() => {
     if (center) {
-      map.flyTo([center.lat, center.lng], 19, { duration: 0.8 });
+      map.flyTo([center.lat, center.lng], 18, { duration: 0.8 });
     }
   }, [center, map]);
 
@@ -302,6 +302,7 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
                 : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }
             url={activeTilesUrl}
+            maxNativeZoom={isSatellite ? 18 : 19}
           />
           <MapViewController mode={mode} center={mapCenter} points={points} onPointAdded={addPoint} />
           {points.map((point, index) => (
