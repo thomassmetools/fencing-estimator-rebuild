@@ -13,6 +13,7 @@ interface ResultComposerProps {
   onCustomerNameChange: (value: string) => void;
   onCustomerAddressChange: (value: string) => void;
   formatAmount: (n: number) => string;
+  onBack: () => void;
 }
 
 export const ResultComposer = ({
@@ -24,6 +25,7 @@ export const ResultComposer = ({
   onCustomerNameChange,
   onCustomerAddressChange,
   formatAmount,
+  onBack,
 }: ResultComposerProps) => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -164,114 +166,123 @@ export const ResultComposer = ({
           <h2>Your fence enquiry</h2>
           <p>Enter your contact details, check the summary, then send it to the contractor.</p>
         </div>
+        <button type="button" className="wizard-back-btn" onClick={onBack}>
+          ← Back to products
+        </button>
       </div>
 
-      <label className="field-stack">
-        <span>Your name</span>
-        <input
-          type="text"
-          placeholder="Required"
-          value={customerName}
-          onChange={(event) => {
-            onCustomerNameChange(event.target.value);
-            setError(null);
-          }}
-        />
-      </label>
+      <div className="result-layout">
+        <div className="result-fields">
+          <label className="field-stack">
+            <span>Your name</span>
+            <input
+              type="text"
+              placeholder="Required"
+              value={customerName}
+              onChange={(event) => {
+                onCustomerNameChange(event.target.value);
+                setError(null);
+              }}
+            />
+          </label>
 
-      <label className="field-stack">
-        <span>Fence site address</span>
-        <input
-          type="text"
-          placeholder="Required"
-          value={customerAddress}
-          onChange={(event) => {
-            onCustomerAddressChange(event.target.value);
-            setError(null);
-          }}
-        />
-      </label>
+          <label className="field-stack">
+            <span>Fence site address</span>
+            <input
+              type="text"
+              placeholder="Required"
+              value={customerAddress}
+              onChange={(event) => {
+                onCustomerAddressChange(event.target.value);
+                setError(null);
+              }}
+            />
+          </label>
 
-      <div className="contact-form-grid">
-        <label className="field-stack">
-          <span>Email</span>
-          <input
-            type="email"
-            placeholder="Email or phone required"
-            value={customerEmail}
+          <div className="contact-form-grid">
+            <label className="field-stack">
+              <span>Email</span>
+              <input
+                type="email"
+                placeholder="Email or phone required"
+                value={customerEmail}
+                onChange={(event) => {
+                  setCustomerEmail(event.target.value);
+                  setError(null);
+                }}
+              />
+            </label>
+            <label className="field-stack">
+              <span>Phone</span>
+              <input
+                type="tel"
+                placeholder="Email or phone required"
+                value={customerPhone}
+                onChange={(event) => {
+                  setCustomerPhone(event.target.value);
+                  setError(null);
+                }}
+              />
+            </label>
+          </div>
+
+          <div className="summary-box">
+            <div>
+              <span className="summary-label">Measurement</span>
+              <strong>{measurement ? `${measurement.value.toFixed(1)} ${measurement.unitLabel}` : "Add a measurement"}</strong>
+            </div>
+            <div>
+              <span className="summary-label">Selected items</span>
+              <strong>{selectedProducts.length}</strong>
+            </div>
+            <div>
+              <span className="summary-label">Estimated material total</span>
+              <strong>{estimatedTotal > 0 ? formatAmount(estimatedTotal) : "Not calculated"}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="result-message">
+          <textarea
+            className="result-area"
+            value={message}
             onChange={(event) => {
-              setCustomerEmail(event.target.value);
-              setError(null);
+              setMessageOverride(event.target.value);
             }}
           />
-        </label>
-        <label className="field-stack">
-          <span>Phone</span>
-          <input
-            type="tel"
-            placeholder="Email or phone required"
-            value={customerPhone}
-            onChange={(event) => {
-              setCustomerPhone(event.target.value);
-              setError(null);
-            }}
-          />
-        </label>
-      </div>
-
-      <div className="summary-box">
-        <div>
-          <span className="summary-label">Measurement</span>
-          <strong>{measurement ? `${measurement.value.toFixed(1)} ${measurement.unitLabel}` : "Add a measurement"}</strong>
-        </div>
-        <div>
-          <span className="summary-label">Selected items</span>
-          <strong>{selectedProducts.length}</strong>
-        </div>
-        <div>
-          <span className="summary-label">Estimated material total</span>
-          <strong>{estimatedTotal > 0 ? formatAmount(estimatedTotal) : "Not calculated"}</strong>
-        </div>
-      </div>
-
-      <textarea
-        className="result-area"
-        value={message}
-        onChange={(event) => {
-          setMessageOverride(event.target.value);
-        }}
-      />
           {submitStatus === "saved" ? (
-        <div className="success-panel">
-          <strong>Enquiry sent.</strong>
-          <p>The contractor has received your fence details and can follow up from the admin portal.</p>
-          <button type="button" onClick={() => setSubmitStatus("idle")}>
-            Send another enquiry
-          </button>
+            <div className="success-panel">
+              <strong>Enquiry sent.</strong>
+              <p>The contractor has received your fence details and can follow up from the admin portal.</p>
+              <button type="button" onClick={() => setSubmitStatus("idle")}>
+                Send another enquiry
+              </button>
+            </div>
+          ) : (
+            <TurnstileWidget key={turnstileNonce} onTokenChange={setTurnstileToken} />
+          )}
+
+          <div className="action-row stretch">
+            <button type="button" className="primary" onClick={() => void copyMessage()}>
+              {activeAction === "copy" ? "Saving..." : copyLabel}
+            </button>
+            <button type="button" onClick={() => void submitLead()} disabled={activeAction !== null || submitStatus === "saved"}>
+              {activeAction === "submit" ? "Sending..." : submitStatus === "saved" ? "Enquiry sent" : "Send enquiry"}
+            </button>
+            <button type="button" onClick={() => void emailContractor()} disabled={activeAction !== null}>
+              {activeAction === "email" ? "Saving..." : emailLabel}
+            </button>
+          </div>
+
+          {error ? <p className="error-text">{error}</p> : null}
+
+          {contractor.resultTemplate.includePricingDisclaimer ? (
+            <p className="helper-text">
+              Displayed pricing is for lead qualification only. Final quotes still depend on site conditions and access.
+            </p>
+          ) : null}
         </div>
-      ) : (
-        <TurnstileWidget key={turnstileNonce} onTokenChange={setTurnstileToken} />
-      )}
-
-      <div className="action-row stretch">
-        <button type="button" className="primary" onClick={() => void copyMessage()}>
-          {activeAction === "copy" ? "Saving..." : copyLabel}
-        </button>
-        <button type="button" onClick={() => void submitLead()} disabled={activeAction !== null || submitStatus === "saved"}>
-          {activeAction === "submit" ? "Sending..." : submitStatus === "saved" ? "Enquiry sent" : "Send enquiry"}
-        </button>
-        <button type="button" onClick={() => void emailContractor()} disabled={activeAction !== null}>
-          {activeAction === "email" ? "Saving..." : emailLabel}
-        </button>
       </div>
-
-      {error ? <p className="error-text">{error}</p> : null}
-
-      {contractor.resultTemplate.includePricingDisclaimer ? (
-        <p className="helper-text">
-          Displayed pricing is for lead qualification only. Final quotes still depend on site conditions and access.
-        </p>
-      ) : null}
     </section>
   );
 };

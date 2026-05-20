@@ -10,6 +10,8 @@ interface ProductSelectorProps {
   onMeasuredProductChange: (productId: string | null) => void;
   canApplyMeasurement: boolean;
   formatAmount: (n: number) => string;
+  onBack: () => void;
+  onNext: () => void;
 }
 
 export const ProductSelector = ({
@@ -21,6 +23,8 @@ export const ProductSelector = ({
   onMeasuredProductChange,
   canApplyMeasurement,
   formatAmount,
+  onBack,
+  onNext,
 }: ProductSelectorProps) => {
   const updateSelection = (productId: string, quantity: number) => {
     if (quantity <= 0) {
@@ -49,13 +53,16 @@ export const ProductSelector = ({
           <h2>Choose your preferred fence</h2>
           <p>
             {measuredLengthLabel
-              ? `We have filled matching lineal products from your saved ${measuredLengthLabel} measurement.`
+              ? `Lineal products have been pre-filled from your ${measuredLengthLabel} measurement.`
               : "Save your fence length first, then choose the product you want priced."}
           </p>
         </div>
+        <button type="button" className="wizard-back-btn" onClick={onBack}>
+          ← Back to map
+        </button>
       </div>
 
-      <div className="product-list">
+      <div className="product-grid">
         {products.map((product) => {
           const quantity = lookupQuantity(product.id);
           return (
@@ -97,6 +104,11 @@ export const ProductSelector = ({
             </article>
           );
         })}
+      </div>
+
+      <div className="wizard-nav-row">
+        <button type="button" onClick={onBack}>← Back to map</button>
+        <button type="button" className="primary" onClick={onNext}>Continue to enquiry →</button>
       </div>
     </section>
   );

@@ -7,6 +7,8 @@ import { ResultComposer } from "../components/ResultComposer";
 import { createCurrencyFormatter } from "../lib/estimate";
 import type { ContractorRecord, MeasurementResult, Product, SelectedProduct } from "../types";
 
+type WizardStep = 1 | 2 | 3;
+
 const computeMeasuredLengths = (measurement: MeasurementResult | null) => {
   if (!measurement || measurement.mode !== "distance") return null;
   return {
@@ -29,6 +31,7 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [measuredProductId, setMeasuredProductId] = useState<string | null>(null);
+  const [wizardStep, setWizardStep] = useState<WizardStep>(1);
 
   const formatAmount = useMemo(
     () => createCurrencyFormatter(contractor?.currency ?? "NZD"),
@@ -82,6 +85,9 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
   const handleMeasurementChange = (nextMeasurement: MeasurementResult | null) => {
     setMeasurement(nextMeasurement);
     autofillMeasuredProduct(nextMeasurement, measuredProductId);
+    if (nextMeasurement && wizardStep === 1) {
+      setWizardStep(2);
+    }
   };
 
   const handleMeasuredProductChange = (productId: string | null) => {
@@ -117,8 +123,7 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
   const accentColor = contractor.branding.accentColor || "#d8a64f";
   const hasFacebookUrl = contractor.contact.facebookUrl.trim().length > 0;
   const hasMeasurement = Boolean(measurement);
-  const hasSelectedProducts = selectedProducts.length > 0;
-  const activeStep = !hasMeasurement ? 1 : !hasSelectedProducts ? 2 : 3;
+  const measurementBadge = measurement ? `${Math.ceil(measurement.value)} ${measurement.unitLabel}` : null;
 
   return (
     <main
@@ -147,50 +152,72 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
         </div>
       </section>
 
-      <section className="estimator-steps" aria-label="Estimator steps">
-        <div className={activeStep === 1 ? "is-active" : ""} aria-current={activeStep === 1 ? "step" : undefined}>
-          <span>1</span>
+      <nav className="estimator-steps" aria-label="Estimator steps">
+        <button
+          type="button"
+          className={wizardStep === 1 ? "is-active" : ""}
+          aria-current={wizardStep === 1 ? "step" : undefined}
+          onClick={() => setWizardStep(1)}
+        >
+          <span className="step-num">1</span>
           <strong>Measure</strong>
-        </div>
-        <div className={activeStep === 2 ? "is-active" : ""} aria-current={activeStep === 2 ? "step" : undefined}>
-          <span>2</span>
+        </button>
+        <button
+          type="button"
+          className={wizardStep === 2 ? "is-active" : ""}
+          aria-current={wizardStep === 2 ? "step" : undefined}
+          onClick={() => setWizardStep(2)}
+        >
+          <span className="step-num">2</span>
           <strong>Choose</strong>
-        </div>
-        <div className={activeStep === 3 ? "is-active" : ""} aria-current={activeStep === 3 ? "step" : undefined}>
-          <span>3</span>
+          {measurementBadge && wizardStep !== 2 ? <span className="step-badge">{measurementBadge}</span> : null}
+        </button>
+        <button
+          type="button"
+          className={wizardStep === 3 ? "is-active" : ""}
+          aria-current={wizardStep === 3 ? "step" : undefined}
+          onClick={() => setWizardStep(3)}
+        >
+          <span className="step-num">3</span>
           <strong>Send</strong>
-        </div>
-      </section>
+        </button>
+      </nav>
 
-      <section className="estimator-grid">
+      {wizardStep === 1 && (
         <MapMeasurePanel
           onMeasurementChange={handleMeasurementChange}
           onAddressChange={setCustomerAddress}
           measurementSystem={contractor.measurementSystem}
+          savedMeasurementLabel={hasMeasurement ? measurementBadge : null}
         />
-        <aside className="sidebar-stack">
-          <ProductSelector
-            products={contractor.products}
-            selectedProducts={selectedProducts}
-            onSelectionChange={setSelectedProducts}
-            measuredLengthLabel={measurement?.mode === "distance" ? `${Math.ceil(measurement.value)} ${measurement.unitLabel}` : null}
-            measuredProductId={measuredProductId}
-            onMeasuredProductChange={handleMeasuredProductChange}
-            canApplyMeasurement={Boolean(measuredLengthByUnit)}
-            formatAmount={formatAmount}
-          />
-          <ResultComposer
-            contractor={contractor}
-            measurement={measurement}
-            selectedProducts={selectedProductDetails}
-            customerName={customerName}
-            customerAddress={customerAddress}
-            onCustomerNameChange={setCustomerName}
-            onCustomerAddressChange={setCustomerAddress}
-            formatAmount={formatAmount}
-          />
-        </aside>
-      </section>
+      )}
+      {wizardStep === 2 && (
+        <ProductSelector
+          products={contractor.products}
+          selectedProducts={selectedProducts}
+          onSelectionChange={setSelectedProducts}
+          measuredLengthLabel={measurement?.mode === "distance" ? `${Math.ceil(measurement.value)} ${measurement.unitLabel}` : null}
+          measuredProductId={measuredProductId}
+          onMeasuredProductChange={handleMeasuredProductChange}
+          canApplyMeasurement={Boolean(measuredLengthByUnit)}
+          formatAmount={formatAmount}
+          onBack={() => setWizardStep(1)}
+          onNext={() => setWizardStep(3)}
+        />
+      )}
+      {wizardStep === 3 && (
+        <ResultComposer
+          contractor={contractor}
+          measurement={measurement}
+          selectedProducts={selectedProductDetails}
+          customerName={customerName}
+          customerAddress={customerAddress}
+          onCustomerNameChange={setCustomerName}
+          onCustomerAddressChange={setCustomerAddress}
+          formatAmount={formatAmount}
+          onBack={() => setWizardStep(2)}
+        />
+      )}
     </main>
   );
 };

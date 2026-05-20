@@ -14,6 +14,7 @@ interface MapMeasurePanelProps {
   onMeasurementChange: (measurement: MeasurementResult | null) => void;
   onAddressChange: (address: string) => void;
   measurementSystem: MeasurementSystem;
+  savedMeasurementLabel: string | null;
 }
 
 interface SearchResult {
@@ -76,8 +77,8 @@ const MapViewController = ({
   return null;
 };
 
-export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurementSystem }: MapMeasurePanelProps) => {
-  const [mode, setMode] = useState<"distance">("distance");
+export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurementSystem, savedMeasurementLabel }: MapMeasurePanelProps) => {
+  const [mode] = useState<"distance">("distance");
   const [points, setPoints] = useState<MapPoint[]>([]);
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
   const [searchQuery, setSearchQuery] = useState("");
@@ -230,19 +231,11 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
           <h2>Measure your fence line</h2>
           <p>Search the address, then click each corner or end point of the fence.</p>
         </div>
-        <div className="segmented-control">
-          <button
-            type="button"
-            className={mode === "distance" ? "active" : ""}
-            onClick={() => {
-              setMode("distance");
-              setPoints([]);
-              onMeasurementChange(null);
-            }}
-          >
-            Distance
-          </button>
-        </div>
+        {savedMeasurementLabel ? (
+          <span className="saved-measurement-chip">
+            Saved: {savedMeasurementLabel}
+          </span>
+        ) : null}
       </div>
 
       <div className="map-search-bar">
@@ -341,7 +334,7 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
             onClick={() => onMeasurementChange(measurement)}
             disabled={!measurement}
           >
-            Save fence length
+            Save & continue →
           </button>
         </div>
       </div>
