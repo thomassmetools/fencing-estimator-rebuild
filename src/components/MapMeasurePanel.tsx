@@ -309,7 +309,7 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
           <TileLayer
             attribution={satelliteTilesAttribution}
             url={satelliteTilesUrl}
-            maxNativeZoom={22}
+            maxNativeZoom={18}
             maxZoom={22}
           />
           <MapViewController center={mapCenter} onPointAdded={addPoint} />
