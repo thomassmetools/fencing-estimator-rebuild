@@ -4,7 +4,7 @@ interface HomePageProps {
   contractors: ContractorRecord[];
 }
 
-const stripeCheckoutUrl = "https://buy.stripe.com/9B600kgBn8fy5Tp1sSdAk01";
+const stripeCheckoutUrl = "https://buy.stripe.com/6oU7sMetfbrK2Hd7RgdAk02";
 
 export const HomePage = ({ contractors }: HomePageProps) => {
   return (
@@ -41,13 +41,13 @@ export const HomePage = ({ contractors }: HomePageProps) => {
           </p>
 
           <div className="price-strip">
-            <strong>$7.50/month</strong>
-            <span>No contracts</span>
+            <strong>$29/month AUD</strong>
+            <span>14-day free trial</span>
           </div>
 
           <div className="action-row hero-actions">
             <a className="button-link primary" href={stripeCheckoutUrl} target="_self" rel="noreferrer">
-              Start for $7.50/month
+              Start free for 14 days
             </a>
             <a className="button-link" href="/admin">
               Already a customer? Contractor login
@@ -111,27 +111,27 @@ export const HomePage = ({ contractors }: HomePageProps) => {
         </article>
         <article className="proof-card">
           <strong>Simple monthly pricing</strong>
-          <p>$7.50/month with no contract makes it an easy yes for small contractors.</p>
+          <p>14-day free trial, then $29/month AUD. No contract, cancel any time.</p>
         </article>
         <article className="proof-card">
           <strong>One clear action</strong>
-          <p>Buy it, get set up, and start using it in your Facebook and Messenger replies.</p>
+          <p>Start a free trial, get set up, and start using it in your Facebook and Messenger replies.</p>
         </article>
       </section>
 
       <section className="panel cta-panel">
         <div>
           <p className="eyebrow">Stop wasting time measuring every job</p>
-          <h2>Start for $7.50/month</h2>
+          <h2>Try it free for 14 days</h2>
           <p className="helper-text">
             Use it to filter out time-wasters, cut down site visits, and see job size before you quote.
           </p>
           <p className="helper-text">
-            Each enquiry includes the measurement, product selected, and customer contact details.
+            $29/month AUD after the trial. No contracts — cancel any time.
           </p>
         </div>
         <a className="button-link primary cta-button" href={stripeCheckoutUrl} target="_self" rel="noreferrer">
-          Buy now through Stripe
+          Start free trial
         </a>
       </section>
 
