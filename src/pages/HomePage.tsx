@@ -10,10 +10,22 @@ export const HomePage = ({ contractors }: HomePageProps) => {
   return (
     <main className="page-shell landing-shell">
       <section className="landing-nav">
-        <div className="nav-brand">
-          <p className="eyebrow">Tradies Tools</p>
-          <strong>More quotes. Less wasted measuring.</strong>
-        </div>
+        <a className="nav-brand" href="/" aria-label="Tradies Tools home">
+          <span className="nav-logo" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+              <rect width="32" height="32" rx="7" fill="#1d4f41"/>
+              <rect x="5"  y="9"  width="3.5" height="15" rx="1.5" fill="#f4b400"/>
+              <rect x="14" y="9"  width="3.5" height="15" rx="1.5" fill="#f4b400"/>
+              <rect x="23" y="9"  width="3.5" height="15" rx="1.5" fill="#f4b400"/>
+              <rect x="5"  y="12" width="22"  height="3"  rx="1.5" fill="#fff9ef"/>
+              <rect x="5"  y="18" width="22"  height="3"  rx="1.5" fill="#fff9ef"/>
+            </svg>
+          </span>
+          <div>
+            <strong className="nav-wordmark">Tradies Tools</strong>
+            <span className="nav-tagline">More quotes. Less wasted measuring.</span>
+          </div>
+        </a>
         <div className="landing-nav-actions">
           <a className="button-link" href="/admin">
             Contractor login
@@ -56,7 +68,7 @@ export const HomePage = ({ contractors }: HomePageProps) => {
 
           <p className="helper-text">
             {contractors.length > 0
-              ? `${contractors.length} contractor workspace${contractors.length === 1 ? "" : "s"} currently active in this environment.`
+              ? `${contractors.length} fencing contractor${contractors.length === 1 ? "" : "s"} already using Tradies Tools.`
               : "After checkout, you get your own customer page and contractor admin login."}
           </p>
         </div>
@@ -135,32 +147,24 @@ export const HomePage = ({ contractors }: HomePageProps) => {
         </a>
       </section>
 
-      <section className="panel helper-panel portal-section">
-        <div className="panel-header compact portal-header-row">
-          <div>
-            <p className="eyebrow">Contractor access</p>
-            <h2>Easy admin login</h2>
-            <p>Keep the sales page focused on buying. Existing customers can use the contractor login button.</p>
+      <footer className="site-footer">
+        <div className="footer-brand">
+          <p className="eyebrow">Tradies Tools</p>
+          <p className="footer-tagline">More quotes. Less wasted measuring.</p>
+        </div>
+        <div className="footer-links">
+          <a href="/admin">Contractor login</a>
+          <a href={stripeCheckoutUrl}>Start free trial</a>
+          <a href="mailto:hello@tradiestools.co.nz">hello@tradiestools.co.nz</a>
+        </div>
+        <div className="footer-legal">
+          <p>© {new Date().getFullYear()} Tradies Tools. All rights reserved.</p>
+          <div className="footer-legal-links">
+            <a href="/terms">Terms</a>
+            <a href="/privacy">Privacy</a>
           </div>
         </div>
-        <div className="portal-plan-grid">
-          <article className="portal-plan-card">
-            <strong>Best option</strong>
-            <p>Use a clear contractor login link, not a big login form on the homepage.</p>
-          </article>
-          <article className="portal-plan-card">
-            <strong>What they see</strong>
-            <p>After sign-in, they land on their own admin portal or choose from the accounts linked to that email.</p>
-          </article>
-          <article className="portal-plan-card">
-            <strong>Why it works</strong>
-            <p>It keeps the page simple for buyers and still makes admin access easy for existing customers.</p>
-          </article>
-        </div>
-        <div className="card-links">
-          <a href="/admin">Contractor login</a>
-        </div>
-      </section>
+      </footer>
     </main>
   );
 };
