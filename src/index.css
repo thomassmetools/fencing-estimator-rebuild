@@ -936,7 +936,42 @@ a:focus-visible {
   background: var(--surface-strong);
 }
 
-.lead-map-frame {
+/* ── Draggable map pin ───────────────────────────────────────────── */
+.map-pin {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--brand-accent);
+  border: 2.5px solid var(--brand-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--brand-dark);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  font-family: "Inter", sans-serif;
+  user-select: none;
+}
+
+.map-pin:hover {
+  transform: scale(1.18);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.map-pin:active {
+  cursor: grabbing;
+  transform: scale(1.12);
+}
+
+/* ── Leaflet cursor when in measure mode ─────────────────────────── */
+.leaflet-container {
+  cursor: crosshair;
+}
+
+.leaflet-map-frame {
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid var(--line);

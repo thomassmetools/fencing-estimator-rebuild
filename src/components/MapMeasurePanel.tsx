@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { CircleMarker, MapContainer, Polyline, TileLayer, useMap } from "react-leaflet";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
+import L from "leaflet";
 import type { LatLngLiteral } from "leaflet";
 import {
   hasMapboxAccessToken,
   mapboxAccessToken,
-  openStreetMapTilesUrl,
   satelliteTilesAttribution,
   satelliteTilesUrl,
 } from "../lib/map-config";
@@ -31,31 +31,59 @@ const formatMeasurement = (value: number, unitLabel: string) => {
   return `${value.toFixed(1)} ${unitLabel}`;
 };
 
+// Branded draggable pin with point number
+const createPinIcon = (index: number) =>
+  L.divIcon({
+    className: "",
+    html: `<div class="map-pin">${index + 1}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+
+// Draggable marker — updates point position on drag end
+const DraggableMarker = ({
+  point,
+  index,
+  onMove,
+}: {
+  point: MapPoint;
+  index: number;
+  onMove: (index: number, newPoint: MapPoint) => void;
+}) => {
+  const icon = useMemo(() => createPinIcon(index), [index]);
+
+  return (
+    <Marker
+      position={[point.lat, point.lng]}
+      icon={icon}
+      draggable={true}
+      eventHandlers={{
+        dragend: (e) => {
+          const pos = (e.target as L.Marker).getLatLng();
+          onMove(index, { lat: pos.lat, lng: pos.lng });
+        },
+      }}
+    />
+  );
+};
+
 const MapViewController = ({
-  mode,
   center,
-  points,
   onPointAdded,
 }: {
-  mode: "distance" | null;
   center: MapPoint | null;
-  points: MapPoint[];
   onPointAdded: (point: MapPoint) => void;
 }) => {
   const map = useMap();
 
   useEffect(() => {
     if (center) {
-      map.flyTo([center.lat, center.lng], 18, { duration: 0.8 });
+      map.flyTo([center.lat, center.lng], 19, { duration: 0.8 });
     }
   }, [center, map]);
 
   useEffect(() => {
     const handleClick = (event: { latlng: LatLngLiteral }) => {
-      if (!mode) {
-        return;
-      }
-
       onPointAdded({ lat: event.latlng.lat, lng: event.latlng.lng });
     };
 
@@ -63,24 +91,13 @@ const MapViewController = ({
     return () => {
       map.off("click", handleClick);
     };
-  }, [map, mode, onPointAdded]);
-
-  useEffect(() => {
-    if (points.length < 2) {
-      return;
-    }
-
-    const bounds = points.map((point) => [point.lat, point.lng] as [number, number]);
-    map.fitBounds(bounds, { padding: [30, 30] });
-  }, [map, points]);
+  }, [map, onPointAdded]);
 
   return null;
 };
 
 export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurementSystem, savedMeasurementLabel }: MapMeasurePanelProps) => {
-  const [mode] = useState<"distance">("distance");
   const [points, setPoints] = useState<MapPoint[]>([]);
-  const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading">("idle");
@@ -110,18 +127,22 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
     const displayValue = measurementSystem === "imperial" ? metresToFeet(totalDistance) : totalDistance;
 
     return {
-      mode,
+      mode: "distance",
       value: displayValue,
       baseValue: totalDistance,
       unitLabel: measurementSystem === "imperial" ? "ft" : "m",
       pointCount: points.length,
       points,
     };
-  }, [measurementSystem, mode, points]);
+  }, [measurementSystem, points]);
 
-  const addPoint = (point: MapPoint) => {
+  const addPoint = useCallback((point: MapPoint) => {
     setPoints((current) => [...current, point]);
-  };
+  }, []);
+
+  const movePoint = useCallback((index: number, newPoint: MapPoint) => {
+    setPoints((current) => current.map((p, i) => (i === index ? newPoint : p)));
+  }, []);
 
   const clearPoints = () => {
     setPoints([]);
@@ -220,16 +241,13 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
     }
   };
 
-  const isSatellite = mapStyle === "satellite";
-  const activeTilesUrl = isSatellite ? satelliteTilesUrl : openStreetMapTilesUrl;
-
   return (
     <section className="panel panel-map">
       <div className="panel-header">
         <div>
           <p className="eyebrow">Step 1</p>
           <h2>Measure your fence line</h2>
-          <p>Search the address, then click each corner or end point of the fence.</p>
+          <p>Search the address, zoom in, then click each corner of the fence. Drag pins to adjust.</p>
         </div>
         {savedMeasurementLabel ? (
           <span className="saved-measurement-chip">
@@ -257,18 +275,6 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
         <button type="button" className="primary" onClick={() => void searchAddress()} disabled={searchStatus === "loading"}>
           {searchStatus === "loading" ? "Searching..." : "Find address"}
         </button>
-        <div className="segmented-control">
-          <button type="button" className={mapStyle === "street" ? "active" : ""} onClick={() => setMapStyle("street")}>
-            Street
-          </button>
-          <button
-            type="button"
-            className={mapStyle === "satellite" ? "active" : ""}
-            onClick={() => setMapStyle("satellite")}
-          >
-            Satellite
-          </button>
-        </div>
       </div>
 
       {searchError ? <p className="error-text">{searchError}</p> : null}
@@ -293,41 +299,51 @@ export const MapMeasurePanel = ({ onMeasurementChange, onAddressChange, measurem
       ) : null}
 
       <div className="map-frame">
-        <MapContainer center={defaultCenter} zoom={19} scrollWheelZoom className="leaflet-map">
+        <MapContainer
+          center={defaultCenter}
+          zoom={18}
+          maxZoom={22}
+          scrollWheelZoom
+          className="leaflet-map"
+        >
           <TileLayer
-            key={mapStyle}
-            attribution={
-              isSatellite
-                ? satelliteTilesAttribution
-                : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }
-            url={activeTilesUrl}
-            maxNativeZoom={isSatellite ? 18 : 19}
+            attribution={satelliteTilesAttribution}
+            url={satelliteTilesUrl}
+            maxNativeZoom={22}
+            maxZoom={22}
           />
-          <MapViewController mode={mode} center={mapCenter} points={points} onPointAdded={addPoint} />
+          <MapViewController center={mapCenter} onPointAdded={addPoint} />
           {points.map((point, index) => (
-            <CircleMarker
+            <DraggableMarker
               key={`${point.lat}-${point.lng}-${index}`}
-              center={point}
-              radius={6}
-              pathOptions={{ color: "#fff", fillColor: "#c96f2d", fillOpacity: 1 }}
+              point={point}
+              index={index}
+              onMove={movePoint}
             />
           ))}
-          {points.length > 1 ? <Polyline positions={points} pathOptions={{ color: "#173f35", weight: 4 }} /> : null}
+          {points.length > 1 ? (
+            <Polyline positions={points} pathOptions={{ color: "#1d4f41", weight: 4, opacity: 0.9 }} />
+          ) : null}
         </MapContainer>
       </div>
 
       <div className="map-toolbar">
         <div>
           <strong>{measurement ? formatMeasurement(measurement.value, measurement.unitLabel) : "No measurement yet"}</strong>
-          <p>{points.length} points added. Click along the fence line, then save the length for your enquiry.</p>
+          <p>
+            {points.length === 0
+              ? "Click on the map to place your first point along the fence line."
+              : points.length === 1
+                ? "1 point placed — keep clicking to trace the fence line. Drag any pin to adjust."
+                : `${points.length} points — drag pins to fine-tune, then save when ready.`}
+          </p>
         </div>
         <div className="action-row">
           <button type="button" onClick={removeLastPoint} disabled={points.length === 0}>
             Undo last point
           </button>
           <button type="button" onClick={clearPoints} disabled={points.length === 0}>
-            Clear points
+            Clear all
           </button>
           <button
             type="button"
