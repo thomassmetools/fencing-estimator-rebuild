@@ -153,7 +153,7 @@ export const HomePage = ({ contractors }: HomePageProps) => {
         <div className="footer-links">
           <a href="/admin">Contractor login</a>
           <a href={stripeCheckoutUrl}>Start free trial</a>
-          <a href="mailto:hello@tradiestools.co.nz">hello@tradiestools.co.nz</a>
+          <a href="mailto:info@tradiestools.co.nz">info@tradiestools.co.nz</a>
         </div>
         <div className="footer-legal">
           <p>© {new Date().getFullYear()} Tradies Tools. All rights reserved.</p>
