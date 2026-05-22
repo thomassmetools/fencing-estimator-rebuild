@@ -34,7 +34,7 @@ interface LeadPayload {
 
 const sendLeadNotification = async ({
   businessName,
-  contractorSlug,
+  contractorId,
   contractorEmail,
   customerName,
   customerEmail,
@@ -48,7 +48,7 @@ const sendLeadNotification = async ({
   estimatedTotal,
 }: {
   businessName: string;
-  contractorSlug: string;
+  contractorId: string;
   contractorEmail: string;
   customerName: string;
   customerEmail: string;
@@ -72,7 +72,7 @@ const sendLeadNotification = async ({
     measurementMode && measurementValue && measurementUnit
       ? `${measurementMode === "distance" ? "Fence length" : "Measured area"}: ${measurementValue.toFixed(1)} ${measurementUnit}`
       : "No measurement saved";
-  const adminUrl = `${publicSiteUrl}/admin/${contractorSlug}`;
+  const adminUrl = `${publicSiteUrl}/admin/${contractorId}`;
   const contactLine =
     customerEmail && customerPhone
       ? `${customerEmail} / ${customerPhone}`
@@ -336,7 +336,7 @@ Deno.serve(async (request) => {
     try {
       const notificationResult = await sendLeadNotification({
         businessName: String(contractor.business_name ?? "Contractor"),
-        contractorSlug: String(contractor.slug ?? ""),
+        contractorId: String(contractor.id ?? ""),
         contractorEmail: String(contractor.email ?? ""),
         customerName: body.customer_name ?? "",
         customerEmail: body.customer_email ?? "",
