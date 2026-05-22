@@ -464,11 +464,14 @@ a.primary:hover,
 
 
 .brand-logo {
-  height: 56px;
-  max-width: 200px;
+  height: 72px;
+  max-width: 100%;
   object-fit: contain;
-  margin-bottom: 12px;
   display: block;
+  background: #fff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
 }
 
 .contact-panel {

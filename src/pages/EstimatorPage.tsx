@@ -137,14 +137,14 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
     >
       <section className="brand-banner">
         <div>
-          {contractor.branding.logoUrl ? (
-            <img src={contractor.branding.logoUrl} alt={contractor.contact.businessName} className="brand-logo" />
-          ) : null}
           <p className="eyebrow">{contractor.branding.heroLabel}</p>
           <h1>{contractor.contact.businessName}</h1>
           <p>{contractor.branding.introText}</p>
         </div>
         <div className="contact-panel">
+          {contractor.branding.logoUrl ? (
+            <img src={contractor.branding.logoUrl} alt={contractor.contact.businessName} className="brand-logo" />
+          ) : null}
           {contractor.contact.phone ? <span>{contractor.contact.phone}</span> : null}
           {contractor.contact.email ? <span>{contractor.contact.email}</span> : null}
           {hasFacebookUrl ? (
