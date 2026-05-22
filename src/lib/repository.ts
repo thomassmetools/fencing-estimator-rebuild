@@ -124,7 +124,7 @@ type AdminAccessRow = {
     slug: string;
     business_name: string;
     hero_label: string;
-  }[] | null;
+  } | null;
 };
 
 const contractorColumns = `
@@ -387,13 +387,13 @@ export const fetchAdminAccessRecords = async (authUserId: string): Promise<Admin
     throw error;
   }
 
-  return ((data ?? []) as AdminAccessRow[])
-    .filter((row) => Boolean(row.contractors?.[0]))
+  return ((data ?? []) as unknown as AdminAccessRow[])
+    .filter((row) => Boolean(row.contractors))
     .map((row) => ({
       contractorId: row.contractor_id,
-      slug: row.contractors?.[0]?.slug ?? "",
-      businessName: row.contractors?.[0]?.business_name ?? "Contractor account",
-      heroLabel: row.contractors?.[0]?.hero_label ?? "",
+      slug: row.contractors?.slug ?? "",
+      businessName: row.contractors?.business_name ?? "Contractor account",
+      heroLabel: row.contractors?.hero_label ?? "",
     }))
     .sort((left, right) => left.businessName.localeCompare(right.businessName));
 };
