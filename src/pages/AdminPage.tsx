@@ -23,11 +23,11 @@ interface AdminPageProps {
 }
 
 export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
-  const { slug = "" } = useParams();
+  const { id = "" } = useParams();
   const { isConfigured, isLoading: authLoading, session, signOut } = useAuth();
   const [contractor, setContractor] = useState<ContractorRecord | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
-  const [loadedSlug, setLoadedSlug] = useState("");
+  const [loadedId, setLoadedId] = useState("");
   const [settingsStatus, setSettingsStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [productsStatus, setProductsStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [leads, setLeads] = useState<LeadRecord[]>([]);
@@ -41,7 +41,7 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
 
-  const publicUrl = useMemo(() => `${window.location.origin}/${slug}`, [slug]);
+  const publicUrl = useMemo(() => `${window.location.origin}/${id}`, [id]);
   const facebookShareText = useMemo(
     () =>
       `Need a fence quote? Measure your fence line and send us the details here: ${publicUrl}`,
@@ -52,6 +52,7 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
       `<iframe src="${publicUrl}" title="${contractor?.contact.businessName ?? "Fence estimator"}" style="width:100%;min-height:760px;border:0;"></iframe>`,
     [contractor?.contact.businessName, publicUrl],
   );
+
 
   const copyShareText = async (value: string, label: string) => {
     await navigator.clipboard.writeText(value);
@@ -98,14 +99,14 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
 
     let active = true;
 
-    void fetchAdminContractor(slug, session.user.id)
+    void fetchAdminContractor(id, session.user.id)
       .then((record) => {
         if (!active) {
           return;
         }
         setPageError(null);
         setContractor(record);
-        setLoadedSlug(slug);
+        setLoadedId(id);
         if (record) {
           void loadLeads(record.id);
           void loadSubscription(record.id);
@@ -116,13 +117,13 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
           return;
         }
         setPageError(loadError instanceof Error ? loadError.message : "Unable to load contractor settings.");
-        setLoadedSlug(slug);
+        setLoadedId(id);
       });
 
     return () => {
       active = false;
     };
-  }, [authLoading, isConfigured, session?.user.id, slug]);
+  }, [authLoading, isConfigured, session?.user.id, id]);
 
   if (!isConfigured) {
     return (
@@ -136,10 +137,10 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
   }
 
   if (!authLoading && !session) {
-    return <Navigate to={`/login?next=${encodeURIComponent(`/admin/${slug}`)}`} replace />;
+    return <Navigate to={`/login?next=${encodeURIComponent(`/admin/${id}`)}`} replace />;
   }
 
-  if (authLoading || (!!session && loadedSlug !== slug)) {
+  if (authLoading || (!!session && loadedId !== id)) {
     return (
       <main className="page-shell loading-shell">
         <div className="empty-state">
@@ -166,7 +167,7 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
       <main className="page-shell not-found-shell">
         <div className="empty-state">
           <h1>Access not available</h1>
-          <p>This signed-in user is not linked to the requested contractor slug.</p>
+          <p>This signed-in user is not linked to the requested contractor.</p>
         </div>
       </main>
     );

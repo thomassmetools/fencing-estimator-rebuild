@@ -24,8 +24,8 @@ interface EstimatorPageProps {
 }
 
 export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
-  const { slug = "" } = useParams();
-  const contractor = contractorMap.get(slug);
+  const { id = "" } = useParams();
+  const contractor = contractorMap.get(id);
   const [measurement, setMeasurement] = useState<MeasurementResult | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
   const [customerName, setCustomerName] = useState("");
@@ -112,7 +112,7 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
       <main className="page-shell not-found-shell">
         <div className="empty-state">
           <h1>Contractor not found</h1>
-          <p>Try one of the seeded contractor slugs from the home page.</p>
+          <p>Check the link you were given and try again.</p>
           <a href="/">Back to home</a>
         </div>
       </main>
@@ -137,6 +137,9 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
     >
       <section className="brand-banner">
         <div>
+          {contractor.branding.logoUrl ? (
+            <img src={contractor.branding.logoUrl} alt={contractor.contact.businessName} className="brand-logo" />
+          ) : null}
           <p className="eyebrow">{contractor.branding.heroLabel}</p>
           <h1>{contractor.contact.businessName}</h1>
           <p>{contractor.branding.introText}</p>

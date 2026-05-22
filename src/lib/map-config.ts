@@ -1,3 +1,7 @@
+export const googleMapsApiKey =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+  "AIzaSyBb1Y8KQHALbw_CWejMWEJajsn7UynTCRI";
+
 export const mapboxAccessToken =
   import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
   "pk.eyJ1IjoidGhvbWFzMTNob3dpZSIsImEiOiJjbW50NzdqdngwazlkMnBwcGRvdW1qbTUxIn0.OhVhBMFaoQ09UHuEukj8CA";

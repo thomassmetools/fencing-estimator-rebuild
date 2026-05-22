@@ -23,6 +23,7 @@ export interface ContractorBranding {
   accentColor: string;
   heroLabel: string;
   introText: string;
+  logoUrl: string;
 }
 
 export interface ContractorContact {

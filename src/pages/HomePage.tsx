@@ -75,21 +75,19 @@ export const HomePage = ({ contractors }: HomePageProps) => {
 
         <div className="hero-card demo-card">
           <p className="hero-card-label">What the customer sends you</p>
-          <div className="map-demo">
-            <div className="map-demo-grid" aria-hidden="true">
-              <span className="map-line map-line-a" />
-              <span className="map-line map-line-b" />
-              <span className="map-point map-point-a" />
-              <span className="map-point map-point-b" />
-              <span className="map-point map-point-c" />
-            </div>
-            <div className="map-demo-card">
-              <strong>Fence run measured</strong>
-              <p>32.4m boundary line</p>
-            </div>
-            <div className="map-demo-card">
-              <strong>Customer ready to quote</strong>
-              <p>Contact details, product selected, and site notes included</p>
+          <div className="hero-screenshot-wrap">
+            <img
+              src="/hero-map.jpg"
+              alt="Customer measuring a fence line on a satellite map with numbered pins"
+              className="hero-screenshot"
+              width={1200}
+              height={700}
+            />
+            <div className="hero-screenshot-overlay">
+              <div className="hero-screenshot-chip">
+                <strong>42.6m</strong>
+                <span>boundary fence measured</span>
+              </div>
             </div>
           </div>
           <p className="helper-text hero-card-note">

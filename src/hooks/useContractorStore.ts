@@ -24,7 +24,7 @@ export const useContractorStore = () => {
   }, []);
 
   const contractorMap = useMemo(() => {
-    return new Map(contractors.map((contractor) => [contractor.slug, contractor]));
+    return new Map(contractors.map((contractor) => [contractor.id, contractor]));
   }, [contractors]);
 
   return {

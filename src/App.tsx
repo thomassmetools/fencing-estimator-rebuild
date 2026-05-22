@@ -71,8 +71,8 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/admin" element={<AdminHomePage />} />
-        <Route path="/admin/:slug" element={<AdminPage refreshPublicContractors={refresh} />} />
-        <Route path="/:slug" element={<EstimatorPage contractorMap={contractorMap} />} />
+        <Route path="/admin/:id" element={<AdminPage refreshPublicContractors={refresh} />} />
+        <Route path="/:id" element={<EstimatorPage contractorMap={contractorMap} />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>

@@ -68,7 +68,7 @@ export const AdminHomePage = () => {
   }
 
   if (records.length === 1) {
-    return <Navigate to={`/admin/${records[0].slug}`} replace />;
+    return <Navigate to={`/admin/${records[0].contractorId}`} replace />;
   }
 
   if (pageError) {
@@ -116,9 +116,9 @@ export const AdminHomePage = () => {
               <div>
                 <p className="card-kicker">{record.heroLabel || "Estimator portal"}</p>
                 <h2>{record.businessName}</h2>
-                <p className="helper-text">Admin URL: /admin/{record.slug}</p>
+                <p className="helper-text">Admin URL: /admin/{record.contractorId}</p>
               </div>
-              <Link className="button-link primary" to={`/admin/${record.slug}`}>
+              <Link className="button-link primary" to={`/admin/${record.contractorId}`}>
                 Open admin portal
               </Link>
             </article>

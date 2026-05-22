@@ -12,6 +12,7 @@ export const seedContractors: ContractorRecord[] = [
       heroLabel: "Outdoor quoting made simple",
       introText:
         "Measure the site, choose your preferred fence style, and copy a clean enquiry message ready to send.",
+      logoUrl: "",
     },
     contact: {
       businessName: "Tasman Fencing Co.",
@@ -61,6 +62,7 @@ export const seedContractors: ContractorRecord[] = [
       heroLabel: "Fast rural fence planning",
       introText:
         "Built for Facebook traffic and website embeds so rural customers can self-measure before they call.",
+      logoUrl: "",
     },
     contact: {
       businessName: "Boundaryline Rural",

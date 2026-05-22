@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ContractorCurrency, ContractorRecord, MeasurementSystem } from "../types";
 import { SUPPORTED_CURRENCIES } from "../lib/estimate";
 import { validateContractor } from "../lib/validation";
+import { uploadContractorLogo } from "../lib/repository";
 
 interface AdminSettingsFormProps {
   contractor: ContractorRecord;
@@ -17,6 +18,8 @@ const normaliseColorValue = (value: string, fallback: string) => {
 export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSettingsFormProps) => {
   const [draft, setDraft] = useState(contractor);
   const [error, setError] = useState<string | null>(null);
+  const [logoStatus, setLogoStatus] = useState<"idle" | "uploading">("idle");
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const updateField = (section: "branding" | "contact" | "resultTemplate", key: string, value: string | boolean) => {
     setDraft((current) => ({
@@ -34,6 +37,22 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
 
   const updateCurrency = (currency: ContractorCurrency) => {
     setDraft((current) => ({ ...current, currency }));
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    setLogoStatus("uploading");
+    setError(null);
+    try {
+      const url = await uploadContractorLogo(contractor.id, file);
+      setDraft((current) => ({
+        ...current,
+        branding: { ...current.branding, logoUrl: url },
+      }));
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Logo upload failed.");
+    } finally {
+      setLogoStatus("idle");
+    }
   };
 
   const renderColorField = (
@@ -141,6 +160,48 @@ export const AdminSettingsForm = ({ contractor, onSave, saveStatus }: AdminSetti
           <span>Intro text</span>
           <textarea rows={3} value={draft.branding.introText} onChange={(event) => updateField("branding", "introText", event.target.value)} />
         </label>
+        <div className="field-stack full-span">
+          <span>Company logo</span>
+          <div className="logo-upload-row">
+            {draft.branding.logoUrl ? (
+              <img src={draft.branding.logoUrl} alt="Company logo" className="logo-preview" />
+            ) : (
+              <div className="logo-placeholder">No logo uploaded</div>
+            )}
+            <div className="logo-upload-actions">
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleLogoUpload(file);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={logoStatus === "uploading"}
+              >
+                {logoStatus === "uploading" ? "Uploading..." : draft.branding.logoUrl ? "Replace logo" : "Upload logo"}
+              </button>
+              {draft.branding.logoUrl ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDraft((current) => ({
+                      ...current,
+                      branding: { ...current.branding, logoUrl: "" },
+                    }))
+                  }
+                >
+                  Remove logo
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
         {renderColorField("Primary color", "primaryColor", "#1d4f41")}
         {renderColorField("Accent color", "accentColor", "#d8a64f")}
         <label className="field-stack full-span">

@@ -36,6 +36,7 @@ type ContractorRow = {
   closing_line: string;
   include_pricing_disclaimer: boolean;
   is_published: boolean;
+  logo_url: string | null;
 };
 
 type ProductRow = {
@@ -143,7 +144,8 @@ const contractorColumns = `
   opening_line,
   closing_line,
   include_pricing_disclaimer,
-  is_published
+  is_published,
+  logo_url
 `;
 
 const productColumns = `
@@ -203,6 +205,7 @@ const mapContractor = (row: ContractorRow, products: ProductRow[]): ContractorRe
       accentColor: row.accent_color,
       heroLabel: row.hero_label,
       introText: row.intro_text,
+      logoUrl: row.logo_url ?? "",
     },
     contact: {
       businessName: row.business_name,
@@ -330,7 +333,7 @@ export const fetchPublicContractors = async (): Promise<ContractorRecord[]> => {
   );
 };
 
-export const fetchAdminContractor = async (slug: string, authUserId: string): Promise<ContractorRecord | null> => {
+export const fetchAdminContractor = async (id: string, authUserId: string): Promise<ContractorRecord | null> => {
   const supabase = getSupabaseClient();
   if (!supabase) {
     throw new Error("Supabase is not configured.");
@@ -339,7 +342,7 @@ export const fetchAdminContractor = async (slug: string, authUserId: string): Pr
   const { data: contractorRow, error: contractorError } = await supabase
     .from("contractors")
     .select(contractorWithProductsColumns)
-    .eq("slug", slug)
+    .eq("id", id)
     .order("display_order", { ascending: true, referencedTable: "products" })
     .single();
 
@@ -416,6 +419,7 @@ export const updateContractorSettings = async (contractor: ContractorRecord) => 
     opening_line: contractor.resultTemplate.openingLine,
     closing_line: contractor.resultTemplate.closingLine,
     include_pricing_disclaimer: contractor.resultTemplate.includePricingDisclaimer,
+    logo_url: contractor.branding.logoUrl || null,
   };
 
   const { error } = await supabase.from("contractors").update(payload).eq("id", contractor.id);
@@ -423,6 +427,23 @@ export const updateContractorSettings = async (contractor: ContractorRecord) => 
   if (error) {
     throw error;
   }
+};
+
+export const uploadContractorLogo = async (contractorId: string, file: File): Promise<string> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error("Supabase is not configured.");
+
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `${contractorId}/logo.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("contractor-logos")
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from("contractor-logos").getPublicUrl(path);
+  return data.publicUrl;
 };
 
 export const setContractorPublished = async (contractorId: string, isPublished: boolean) => {
