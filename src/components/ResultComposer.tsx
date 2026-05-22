@@ -252,10 +252,10 @@ export const ResultComposer = ({
           />
           {submitStatus === "saved" ? (
             <div className="success-panel">
-              <strong>Enquiry sent.</strong>
-              <p>The contractor has received your fence details and can follow up from the admin portal.</p>
+              <strong>Enquiry sent!</strong>
+              <p>Your fence details have been sent to the team. We'll be in touch soon.</p>
               <button type="button" onClick={() => setSubmitStatus("idle")}>
-                Send another enquiry
+                Start a new enquiry
               </button>
             </div>
           ) : (
