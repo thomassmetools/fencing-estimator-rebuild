@@ -49,7 +49,7 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
   );
   const embedCode = useMemo(
     () =>
-      `<iframe src="${publicUrl}" title="${contractor?.contact.businessName ?? "Fence estimator"}" style="width:100%;min-height:760px;border:0;"></iframe>`,
+      `<iframe src="${publicUrl}?embed=1" title="${contractor?.contact.businessName ?? "Fence estimator"}" style="width:100%;min-height:760px;border:0;"></iframe>`,
     [contractor?.contact.businessName, publicUrl],
   );
 

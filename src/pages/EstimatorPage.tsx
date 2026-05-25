@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { MapMeasurePanel } from "../components/MapMeasurePanel";
 import { ProductSelector } from "../components/ProductSelector";
 import { ResultComposer } from "../components/ResultComposer";
@@ -25,6 +25,8 @@ interface EstimatorPageProps {
 
 export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
   const { id = "" } = useParams();
+  const [searchParams] = useSearchParams();
+  const isEmbed = searchParams.get("embed") === "1";
   const contractor = contractorMap.get(id);
   const [measurement, setMeasurement] = useState<MeasurementResult | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
@@ -135,7 +137,7 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
         } as CSSProperties
       }
     >
-      <section className="brand-banner">
+      {!isEmbed && <section className="brand-banner">
         <div>
           <p className="eyebrow">{contractor.branding.heroLabel}</p>
           <h1>{contractor.contact.businessName}</h1>
@@ -153,7 +155,7 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
             </a>
           ) : null}
         </div>
-      </section>
+      </section>}
 
       <nav className="estimator-steps" aria-label="Estimator steps">
         <button

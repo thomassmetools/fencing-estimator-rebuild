@@ -973,6 +973,29 @@ a:focus-visible {
   transform: scale(1.12);
 }
 
+/* ── Bend handle (midpoint between fence pins) ───────────────────── */
+.map-pin-bend {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: #fff;
+  border: 2px solid #1d4f41;
+  transform: rotate(45deg);
+  cursor: grab;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.map-pin-bend:hover {
+  transform: rotate(45deg) scale(1.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.map-pin-bend:active {
+  cursor: grabbing;
+  transform: rotate(45deg) scale(1.2);
+}
+
 /* ── Leaflet cursor when in measure mode ─────────────────────────── */
 .leaflet-container {
   cursor: crosshair;
@@ -1451,6 +1474,18 @@ a:focus-visible {
 
   .leaflet-map {
     height: clamp(360px, 52vh, 560px);
+  }
+
+  .map-pin {
+    width: 20px;
+    height: 20px;
+    font-size: 0.6rem;
+    border-width: 2px;
+  }
+
+  .map-pin-bend {
+    width: 10px;
+    height: 10px;
   }
 
   .panel-map {

@@ -129,6 +129,34 @@ const DraggablePin = ({
   );
 };
 
+// ── Midpoint bend handle ──────────────────────────────────────────────────────
+const BendHandle = ({
+  segmentIndex,
+  midPoint,
+  onBend,
+}: {
+  segmentIndex: number;
+  midPoint: MapPoint;
+  onBend: (segmentIndex: number, newPoint: MapPoint) => void;
+}) => {
+  return (
+    <AdvancedMarker
+      position={{ lat: midPoint.lat, lng: midPoint.lng }}
+      draggable
+      onDragEnd={(event) => {
+        if (event.latLng) {
+          onBend(segmentIndex, {
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng(),
+          });
+        }
+      }}
+    >
+      <div className="map-pin-bend" />
+    </AdvancedMarker>
+  );
+};
+
 // ── Address search helpers ────────────────────────────────────────────────────
 const searchWithMapbox = async (query: string): Promise<SearchResult[]> => {
   if (!hasMapboxAccessToken) return [];
@@ -239,6 +267,22 @@ export const MapMeasurePanel = ({
   const movePoint = useCallback((index: number, newPoint: MapPoint) => {
     setPoints((prev) => prev.map((p, i) => (i === index ? newPoint : p)));
   }, []);
+
+  const bendSegment = useCallback((segmentIndex: number, newPoint: MapPoint) => {
+    setPoints((prev) => [
+      ...prev.slice(0, segmentIndex + 1),
+      newPoint,
+      ...prev.slice(segmentIndex + 1),
+    ]);
+  }, []);
+
+  const segmentMidpoints = useMemo<MapPoint[]>(() => {
+    if (points.length < 2) return [];
+    return points.slice(0, -1).map((p, i) => {
+      const next = points[i + 1];
+      return { lat: (p.lat + next.lat) / 2, lng: (p.lng + next.lng) / 2 };
+    });
+  }, [points]);
 
   const clearPoints = () => {
     setPoints([]);
@@ -363,6 +407,14 @@ export const MapMeasurePanel = ({
           >
             <MapController flyTo={flyTo} onPointAdded={addPoint} />
             <FencePolyline points={points} />
+            {segmentMidpoints.map((midPoint, index) => (
+              <BendHandle
+                key={`bend-${index}`}
+                segmentIndex={index}
+                midPoint={midPoint}
+                onBend={bendSegment}
+              />
+            ))}
             {points.map((point, index) => (
               <DraggablePin
                 key={`${index}-${point.lat}-${point.lng}`}
@@ -387,7 +439,7 @@ export const MapMeasurePanel = ({
               ? "Click on the map to place your first point along the fence line."
               : points.length === 1
                 ? "1 point placed — keep clicking to trace the fence line. Drag any pin to adjust."
-                : `${points.length} points — drag pins to fine-tune, then save when ready.`}
+                : `${points.length} points — drag pins to adjust, or drag the diamond handles to bend a segment.`}
           </p>
         </div>
         <div className="action-row">
