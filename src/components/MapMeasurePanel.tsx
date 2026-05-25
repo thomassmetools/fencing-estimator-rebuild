@@ -134,15 +134,18 @@ const BendHandle = ({
   segmentIndex,
   midPoint,
   onBend,
+  onInteractionStart,
 }: {
   segmentIndex: number;
   midPoint: MapPoint;
   onBend: (segmentIndex: number, newPoint: MapPoint) => void;
+  onInteractionStart: () => void;
 }) => {
   return (
     <AdvancedMarker
       position={{ lat: midPoint.lat, lng: midPoint.lng }}
       draggable
+      onDragStart={onInteractionStart}
       onDragEnd={(event) => {
         if (event.latLng) {
           onBend(segmentIndex, {
@@ -152,7 +155,15 @@ const BendHandle = ({
         }
       }}
     >
-      <div className="map-pin-bend" />
+      {/* stopPropagation prevents the AdvancedMarker click from bubbling to the
+          map's click listener and adding an unwanted extra fence point */}
+      <div
+        className="map-pin-bend"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          onInteractionStart();
+        }}
+      />
     </AdvancedMarker>
   );
 };
@@ -260,7 +271,15 @@ export const MapMeasurePanel = ({
     };
   }, [measurementSystem, points]);
 
+  const suppressClickRef = useRef(false);
+
+  const suppressClick = useCallback(() => {
+    suppressClickRef.current = true;
+    setTimeout(() => { suppressClickRef.current = false; }, 500);
+  }, []);
+
   const addPoint = useCallback((point: MapPoint) => {
+    if (suppressClickRef.current) return;
     setPoints((prev) => [...prev, point]);
   }, []);
 
@@ -413,6 +432,7 @@ export const MapMeasurePanel = ({
                 segmentIndex={index}
                 midPoint={midPoint}
                 onBend={bendSegment}
+                onInteractionStart={suppressClick}
               />
             ))}
             {points.map((point, index) => (
