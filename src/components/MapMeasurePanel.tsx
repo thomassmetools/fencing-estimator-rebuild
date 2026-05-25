@@ -232,20 +232,35 @@ export const MapMeasurePanel = ({
   measurementSystem,
   savedMeasurementLabel,
 }: MapMeasurePanelProps) => {
-  const [points, setPoints] = useState<MapPoint[]>([]);
+  // anchorPoints — numbered pins placed by clicking the map
+  // segmentBends — one optional bend point per segment (null = no bend yet)
+  const [anchorPoints, setAnchorPoints] = useState<MapPoint[]>([]);
+  const [segmentBends, setSegmentBends] = useState<(MapPoint | null)[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading">("idle");
   const [searchError, setSearchError] = useState<string | null>(null);
   const [flyTo, setFlyTo] = useState<MapPoint | null>(null);
 
+  // Full polyline path: anchor, (bend if placed), anchor, (bend if placed), ...
+  const fullPath = useMemo<MapPoint[]>(() => {
+    const result: MapPoint[] = [];
+    for (let i = 0; i < anchorPoints.length; i++) {
+      result.push(anchorPoints[i]);
+      if (i < anchorPoints.length - 1 && segmentBends[i]) {
+        result.push(segmentBends[i]!);
+      }
+    }
+    return result;
+  }, [anchorPoints, segmentBends]);
+
   const measurement = useMemo<MeasurementResult | null>(() => {
-    if (points.length < 2) return null;
+    if (fullPath.length < 2) return null;
 
     let totalDistance = 0;
-    for (let i = 0; i < points.length - 1; i++) {
-      const cur = points[i];
-      const nxt = points[i + 1];
+    for (let i = 0; i < fullPath.length - 1; i++) {
+      const cur = fullPath[i];
+      const nxt = fullPath[i + 1];
       const latDelta = ((nxt.lat - cur.lat) * Math.PI) / 180;
       const lngDelta = ((nxt.lng - cur.lng) * Math.PI) / 180;
       const a =
@@ -266,10 +281,10 @@ export const MapMeasurePanel = ({
       value: displayValue,
       baseValue: totalDistance,
       unitLabel: measurementSystem === "imperial" ? "ft" : "m",
-      pointCount: points.length,
-      points,
+      pointCount: anchorPoints.length,
+      points: fullPath,
     };
-  }, [measurementSystem, points]);
+  }, [measurementSystem, fullPath, anchorPoints.length]);
 
   const suppressClickRef = useRef(false);
 
@@ -280,36 +295,42 @@ export const MapMeasurePanel = ({
 
   const addPoint = useCallback((point: MapPoint) => {
     if (suppressClickRef.current) return;
-    setPoints((prev) => [...prev, point]);
-  }, []);
+    setAnchorPoints((prev) => [...prev, point]);
+    // A new segment is created whenever there is already at least one anchor
+    if (anchorPoints.length >= 1) {
+      setSegmentBends((prev) => [...prev, null]);
+    }
+  }, [anchorPoints.length]);
 
   const movePoint = useCallback((index: number, newPoint: MapPoint) => {
-    setPoints((prev) => prev.map((p, i) => (i === index ? newPoint : p)));
+    setAnchorPoints((prev) => prev.map((p, i) => (i === index ? newPoint : p)));
   }, []);
 
-  const bendSegment = useCallback((segmentIndex: number, newPoint: MapPoint) => {
-    setPoints((prev) => [
-      ...prev.slice(0, segmentIndex + 1),
-      newPoint,
-      ...prev.slice(segmentIndex + 1),
-    ]);
+  // Drag a diamond handle to set/move the bend for that segment — no new pin created
+  const setBend = useCallback((segmentIndex: number, newPoint: MapPoint) => {
+    setSegmentBends((prev) => prev.map((b, i) => (i === segmentIndex ? newPoint : b)));
   }, []);
 
-  const segmentMidpoints = useMemo<MapPoint[]>(() => {
-    if (points.length < 2) return [];
-    return points.slice(0, -1).map((p, i) => {
-      const next = points[i + 1];
+  // Diamond handle positions: use placed bend if it exists, otherwise midpoint
+  const segmentHandlePositions = useMemo<MapPoint[]>(() => {
+    if (anchorPoints.length < 2) return [];
+    return anchorPoints.slice(0, -1).map((p, i) => {
+      const bend = segmentBends[i];
+      if (bend) return bend;
+      const next = anchorPoints[i + 1];
       return { lat: (p.lat + next.lat) / 2, lng: (p.lng + next.lng) / 2 };
     });
-  }, [points]);
+  }, [anchorPoints, segmentBends]);
 
   const clearPoints = () => {
-    setPoints([]);
+    setAnchorPoints([]);
+    setSegmentBends([]);
     onMeasurementChange(null);
   };
 
   const removeLastPoint = () => {
-    setPoints((prev) => prev.slice(0, -1));
+    setAnchorPoints((prev) => prev.slice(0, -1));
+    setSegmentBends((prev) => prev.slice(0, -1));
     onMeasurementChange(null);
   };
 
@@ -425,17 +446,17 @@ export const MapMeasurePanel = ({
             style={{ width: "100%", height: "100%" }}
           >
             <MapController flyTo={flyTo} onPointAdded={addPoint} />
-            <FencePolyline points={points} />
-            {segmentMidpoints.map((midPoint, index) => (
+            <FencePolyline points={fullPath} />
+            {segmentHandlePositions.map((handlePoint, index) => (
               <BendHandle
                 key={`bend-${index}`}
                 segmentIndex={index}
-                midPoint={midPoint}
-                onBend={bendSegment}
+                midPoint={handlePoint}
+                onBend={setBend}
                 onInteractionStart={suppressClick}
               />
             ))}
-            {points.map((point, index) => (
+            {anchorPoints.map((point, index) => (
               <DraggablePin
                 key={`${index}-${point.lat}-${point.lng}`}
                 point={point}
@@ -455,25 +476,25 @@ export const MapMeasurePanel = ({
               : "No measurement yet"}
           </strong>
           <p>
-            {points.length === 0
+            {anchorPoints.length === 0
               ? "Click on the map to place your first point along the fence line."
-              : points.length === 1
+              : anchorPoints.length === 1
                 ? "1 point placed — keep clicking to trace the fence line. Drag any pin to adjust."
-                : `${points.length} points — drag pins to adjust, or drag the diamond handles to bend a segment.`}
+                : `${anchorPoints.length} points — drag pins to adjust, or drag the diamond handles to bend a segment.`}
           </p>
         </div>
         <div className="action-row">
           <button
             type="button"
             onClick={removeLastPoint}
-            disabled={points.length === 0}
+            disabled={anchorPoints.length === 0}
           >
             Undo last point
           </button>
           <button
             type="button"
             onClick={clearPoints}
-            disabled={points.length === 0}
+            disabled={anchorPoints.length === 0}
           >
             Clear all
           </button>
