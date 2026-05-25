@@ -306,8 +306,12 @@ export const MapMeasurePanel = ({
     setAnchorPoints((prev) => prev.map((p, i) => (i === index ? newPoint : p)));
   }, []);
 
-  // Drag a diamond handle to set/move the bend for that segment — no new pin created
+  // Drag a diamond handle to set/move the bend for that segment — no new pin created.
+  // Re-suppress the map click here (at drag-end time) so slow drags don't race the
+  // 500ms window that started at drag-begin.
   const setBend = useCallback((segmentIndex: number, newPoint: MapPoint) => {
+    suppressClickRef.current = true;
+    setTimeout(() => { suppressClickRef.current = false; }, 200);
     setSegmentBends((prev) => prev.map((b, i) => (i === segmentIndex ? newPoint : b)));
   }, []);
 
