@@ -129,47 +129,6 @@ const DraggablePin = ({
   );
 };
 
-// ── Midpoint bend handle ──────────────────────────────────────────────────────
-const BendHandle = ({
-  segmentIndex,
-  midPoint,
-  onBend,
-  onInteractionStart,
-}: {
-  segmentIndex: number;
-  midPoint: MapPoint;
-  onBend: (segmentIndex: number, newPoint: MapPoint) => void;
-  onInteractionStart: () => void;
-}) => {
-  return (
-    <AdvancedMarker
-      position={{ lat: midPoint.lat, lng: midPoint.lng }}
-      draggable
-      // e.stop() uses the Google Maps event system to prevent the click
-      // from propagating to the map's own click listener. DOM stopPropagation
-      // alone is not enough because AdvancedMarker fires its own map-level click.
-      onClick={(e) => e.stop()}
-      onDragStart={onInteractionStart}
-      onDragEnd={(event) => {
-        if (event.latLng) {
-          onBend(segmentIndex, {
-            lat: event.latLng.lat(),
-            lng: event.latLng.lng(),
-          });
-        }
-      }}
-    >
-      <div
-        className="map-pin-bend"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          onInteractionStart();
-        }}
-      />
-    </AdvancedMarker>
-  );
-};
-
 // ── Address search helpers ────────────────────────────────────────────────────
 const searchWithMapbox = async (query: string): Promise<SearchResult[]> => {
   if (!hasMapboxAccessToken) return [];
@@ -234,36 +193,20 @@ export const MapMeasurePanel = ({
   measurementSystem,
   savedMeasurementLabel,
 }: MapMeasurePanelProps) => {
-  // anchorPoints — numbered pins placed by clicking the map
-  // segmentBends — one optional bend point per segment (null = no bend yet)
-  const [anchorPoints, setAnchorPoints] = useState<MapPoint[]>([]);
-  const [segmentBends, setSegmentBends] = useState<(MapPoint | null)[]>([]);
+  const [points, setPoints] = useState<MapPoint[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading">("idle");
   const [searchError, setSearchError] = useState<string | null>(null);
   const [flyTo, setFlyTo] = useState<MapPoint | null>(null);
-  const mapFrameRef = useRef<HTMLDivElement>(null);
-
-  // Full polyline path: anchor, (bend if placed), anchor, (bend if placed), ...
-  const fullPath = useMemo<MapPoint[]>(() => {
-    const result: MapPoint[] = [];
-    for (let i = 0; i < anchorPoints.length; i++) {
-      result.push(anchorPoints[i]);
-      if (i < anchorPoints.length - 1 && segmentBends[i]) {
-        result.push(segmentBends[i]!);
-      }
-    }
-    return result;
-  }, [anchorPoints, segmentBends]);
 
   const measurement = useMemo<MeasurementResult | null>(() => {
-    if (fullPath.length < 2) return null;
+    if (points.length < 2) return null;
 
     let totalDistance = 0;
-    for (let i = 0; i < fullPath.length - 1; i++) {
-      const cur = fullPath[i];
-      const nxt = fullPath[i + 1];
+    for (let i = 0; i < points.length - 1; i++) {
+      const cur = points[i];
+      const nxt = points[i + 1];
       const latDelta = ((nxt.lat - cur.lat) * Math.PI) / 180;
       const lngDelta = ((nxt.lng - cur.lng) * Math.PI) / 180;
       const a =
@@ -284,79 +227,26 @@ export const MapMeasurePanel = ({
       value: displayValue,
       baseValue: totalDistance,
       unitLabel: measurementSystem === "imperial" ? "ft" : "m",
-      pointCount: anchorPoints.length,
-      points: fullPath,
+      pointCount: points.length,
+      points,
     };
-  }, [measurementSystem, fullPath, anchorPoints.length]);
-
-  const suppressClickRef = useRef(false);
-
-  // Attach a capture-phase pointerdown listener to the map container.
-  // Capture phase fires before Google Maps processes any events, guaranteeing
-  // the suppress flag is set before the map's own click listener runs.
-  // This is necessary because AdvancedMarker always propagates a click to the
-  // map — e.stopPropagation() and e.stop() cannot prevent it.
-  useEffect(() => {
-    const container = mapFrameRef.current;
-    if (!container) return;
-    const handler = (e: PointerEvent) => {
-      const target = e.target as Element | null;
-      if (target?.closest(".map-pin-bend")) {
-        suppressClickRef.current = true;
-        setTimeout(() => { suppressClickRef.current = false; }, 600);
-      }
-    };
-    container.addEventListener("pointerdown", handler, { capture: true });
-    return () => container.removeEventListener("pointerdown", handler, { capture: true });
-  }, []);
-
-  const suppressClick = useCallback(() => {
-    suppressClickRef.current = true;
-    setTimeout(() => { suppressClickRef.current = false; }, 600);
-  }, []);
+  }, [measurementSystem, points]);
 
   const addPoint = useCallback((point: MapPoint) => {
-    if (suppressClickRef.current) return;
-    setAnchorPoints((prev) => [...prev, point]);
-    // A new segment is created whenever there is already at least one anchor
-    if (anchorPoints.length >= 1) {
-      setSegmentBends((prev) => [...prev, null]);
-    }
-  }, [anchorPoints.length]);
+    setPoints((prev) => [...prev, point]);
+  }, []);
 
   const movePoint = useCallback((index: number, newPoint: MapPoint) => {
-    setAnchorPoints((prev) => prev.map((p, i) => (i === index ? newPoint : p)));
+    setPoints((prev) => prev.map((p, i) => (i === index ? newPoint : p)));
   }, []);
-
-  // Drag a diamond handle to set/move the bend for that segment — no new pin created.
-  // Re-suppress the map click here (at drag-end time) so slow drags don't race the
-  // 500ms window that started at drag-begin.
-  const setBend = useCallback((segmentIndex: number, newPoint: MapPoint) => {
-    suppressClickRef.current = true;
-    setTimeout(() => { suppressClickRef.current = false; }, 200);
-    setSegmentBends((prev) => prev.map((b, i) => (i === segmentIndex ? newPoint : b)));
-  }, []);
-
-  // Diamond handle positions: use placed bend if it exists, otherwise midpoint
-  const segmentHandlePositions = useMemo<MapPoint[]>(() => {
-    if (anchorPoints.length < 2) return [];
-    return anchorPoints.slice(0, -1).map((p, i) => {
-      const bend = segmentBends[i];
-      if (bend) return bend;
-      const next = anchorPoints[i + 1];
-      return { lat: (p.lat + next.lat) / 2, lng: (p.lng + next.lng) / 2 };
-    });
-  }, [anchorPoints, segmentBends]);
 
   const clearPoints = () => {
-    setAnchorPoints([]);
-    setSegmentBends([]);
+    setPoints([]);
     onMeasurementChange(null);
   };
 
   const removeLastPoint = () => {
-    setAnchorPoints((prev) => prev.slice(0, -1));
-    setSegmentBends((prev) => prev.slice(0, -1));
+    setPoints((prev) => prev.slice(0, -1));
     onMeasurementChange(null);
   };
 
@@ -456,7 +346,7 @@ export const MapMeasurePanel = ({
         </div>
       ) : null}
 
-      <div className="map-frame" ref={mapFrameRef}>
+      <div className="map-frame">
         <APIProvider apiKey={googleMapsApiKey}>
           <Map
             mapId="fencing-estimator-map"
@@ -472,17 +362,8 @@ export const MapMeasurePanel = ({
             style={{ width: "100%", height: "100%" }}
           >
             <MapController flyTo={flyTo} onPointAdded={addPoint} />
-            <FencePolyline points={fullPath} />
-            {segmentHandlePositions.map((handlePoint, index) => (
-              <BendHandle
-                key={`bend-${index}`}
-                segmentIndex={index}
-                midPoint={handlePoint}
-                onBend={setBend}
-                onInteractionStart={suppressClick}
-              />
-            ))}
-            {anchorPoints.map((point, index) => (
+            <FencePolyline points={points} />
+            {points.map((point, index) => (
               <DraggablePin
                 key={`${index}-${point.lat}-${point.lng}`}
                 point={point}
@@ -502,25 +383,25 @@ export const MapMeasurePanel = ({
               : "No measurement yet"}
           </strong>
           <p>
-            {anchorPoints.length === 0
+            {points.length === 0
               ? "Click on the map to place your first point along the fence line."
-              : anchorPoints.length === 1
+              : points.length === 1
                 ? "1 point placed — keep clicking to trace the fence line. Drag any pin to adjust."
-                : `${anchorPoints.length} points — drag pins to adjust, or drag the diamond handles to bend a segment.`}
+                : `${points.length} points — drag pins to fine-tune, then save when ready.`}
           </p>
         </div>
         <div className="action-row">
           <button
             type="button"
             onClick={removeLastPoint}
-            disabled={anchorPoints.length === 0}
+            disabled={points.length === 0}
           >
             Undo last point
           </button>
           <button
             type="button"
             onClick={clearPoints}
-            disabled={anchorPoints.length === 0}
+            disabled={points.length === 0}
           >
             Clear all
           </button>
