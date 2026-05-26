@@ -145,6 +145,10 @@ const BendHandle = ({
     <AdvancedMarker
       position={{ lat: midPoint.lat, lng: midPoint.lng }}
       draggable
+      // e.stop() uses the Google Maps event system to prevent the click
+      // from propagating to the map's own click listener. DOM stopPropagation
+      // alone is not enough because AdvancedMarker fires its own map-level click.
+      onClick={(e) => e.stop()}
       onDragStart={onInteractionStart}
       onDragEnd={(event) => {
         if (event.latLng) {
@@ -155,8 +159,6 @@ const BendHandle = ({
         }
       }}
     >
-      {/* stopPropagation prevents the AdvancedMarker click from bubbling to the
-          map's click listener and adding an unwanted extra fence point */}
       <div
         className="map-pin-bend"
         onPointerDown={(e) => {
@@ -241,6 +243,7 @@ export const MapMeasurePanel = ({
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading">("idle");
   const [searchError, setSearchError] = useState<string | null>(null);
   const [flyTo, setFlyTo] = useState<MapPoint | null>(null);
+  const mapFrameRef = useRef<HTMLDivElement>(null);
 
   // Full polyline path: anchor, (bend if placed), anchor, (bend if placed), ...
   const fullPath = useMemo<MapPoint[]>(() => {
@@ -288,9 +291,28 @@ export const MapMeasurePanel = ({
 
   const suppressClickRef = useRef(false);
 
+  // Attach a capture-phase pointerdown listener to the map container.
+  // Capture phase fires before Google Maps processes any events, guaranteeing
+  // the suppress flag is set before the map's own click listener runs.
+  // This is necessary because AdvancedMarker always propagates a click to the
+  // map — e.stopPropagation() and e.stop() cannot prevent it.
+  useEffect(() => {
+    const container = mapFrameRef.current;
+    if (!container) return;
+    const handler = (e: PointerEvent) => {
+      const target = e.target as Element | null;
+      if (target?.closest(".map-pin-bend")) {
+        suppressClickRef.current = true;
+        setTimeout(() => { suppressClickRef.current = false; }, 600);
+      }
+    };
+    container.addEventListener("pointerdown", handler, { capture: true });
+    return () => container.removeEventListener("pointerdown", handler, { capture: true });
+  }, []);
+
   const suppressClick = useCallback(() => {
     suppressClickRef.current = true;
-    setTimeout(() => { suppressClickRef.current = false; }, 500);
+    setTimeout(() => { suppressClickRef.current = false; }, 600);
   }, []);
 
   const addPoint = useCallback((point: MapPoint) => {
@@ -434,7 +456,7 @@ export const MapMeasurePanel = ({
         </div>
       ) : null}
 
-      <div className="map-frame">
+      <div className="map-frame" ref={mapFrameRef}>
         <APIProvider apiKey={googleMapsApiKey}>
           <Map
             mapId="fencing-estimator-map"
