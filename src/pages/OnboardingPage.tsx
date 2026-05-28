@@ -104,20 +104,12 @@ export const OnboardingPage = () => {
 
   const isLoadingContext = Boolean(session) && !context && !draft && !error;
 
-  const recommendedSlug = useMemo(() => {
-    if (!draft) {
-      return "";
-    }
-
-    return draft.slug;
-  }, [draft]);
-
   const publicUrl = useMemo(() => {
     if (!draft || typeof window === "undefined") {
       return "";
     }
 
-    return `${window.location.origin}/${draft.slug}`;
+    return `${window.location.origin}/${draft.id}`;
   }, [draft]);
 
   const facebookShareText = useMemo(() => {
@@ -302,7 +294,7 @@ export const OnboardingPage = () => {
         </div>
         <div className="admin-hero-links">
           <span>Plan: {context.subscription?.planCode ?? "starter-monthly"}</span>
-          <span>Suggested URL: /{recommendedSlug}</span>
+          <span>Estimator URL: /{draft.id}</span>
           {context.onboarding.isLive ? (
             <a href={publicUrl} target="_blank" rel="noreferrer">
               Open estimator

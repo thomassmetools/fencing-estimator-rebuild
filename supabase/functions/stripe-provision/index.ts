@@ -180,7 +180,15 @@ const sendInviteEmail = async (email: string) => {
 
   if (error) {
     const lower = error.message.toLowerCase();
-    if (lower.includes("already been registered") || lower.includes("already exists")) {
+    if (lower.includes("already registered") || lower.includes("already exists")) {
+      // User already has an auth account — send a magic link instead so they still get a setup email
+      const { error: otpError } = await adminClient.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: redirectTo, shouldCreateUser: false },
+      });
+      if (otpError) {
+        console.error("sendInviteEmail OTP fallback failed:", otpError.message);
+      }
       return;
     }
     throw error;
@@ -338,6 +346,8 @@ const recordBillingEvent = async ({
 };
 
 const handleCheckoutCompleted = async (session: Stripe.Checkout.Session) => {
+  console.log("checkout.session.completed", session.id, session.mode, session.customer_details?.email ?? session.customer_email);
+
   if (session.mode !== "subscription") {
     return;
   }
@@ -358,11 +368,15 @@ const handleCheckoutCompleted = async (session: Stripe.Checkout.Session) => {
 
   if (typeof session.subscription === "string") {
     stripeSubscriptionId = session.subscription;
-    const subscription = await stripe.subscriptions.retrieve(session.subscription);
-    status = subscription.status;
-    currentPeriodEnd = subscription.current_period_end
-      ? new Date(subscription.current_period_end * 1000).toISOString()
-      : null;
+    try {
+      const subscription = await stripe.subscriptions.retrieve(session.subscription);
+      status = subscription.status;
+      currentPeriodEnd = subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000).toISOString()
+        : null;
+    } catch (err) {
+      console.error("stripe.subscriptions.retrieve failed:", err instanceof Error ? err.message : String(err));
+    }
   }
 
   await upsertSubscription({
@@ -474,10 +488,10 @@ Deno.serve(async (request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to process Stripe webhook.";
+    console.error("stripe-provision unhandled error:", message);
     return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unable to process Stripe webhook.",
-      }),
+      JSON.stringify({ error: message }),
       {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

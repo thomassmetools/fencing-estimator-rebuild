@@ -7,14 +7,14 @@ export const CheckoutSuccessPage = () => {
         <p className="eyebrow">Payment received</p>
         <h1>Your estimator setup is underway</h1>
         <p>
-          We've started provisioning your contractor account. The next step is to open the invite email and finish your
-          onboarding details.
+          We're setting up your account now. The next step is to open the setup email and finish your onboarding
+          details.
         </p>
 
         <div className="success-checklist">
           <div>
             <strong>1. Check your email</strong>
-            <p>Look for the Supabase invite or setup link sent to the email used at checkout.</p>
+            <p>Look for a setup link sent to the email you used at checkout.</p>
           </div>
           <div>
             <strong>2. Open the setup link</strong>
