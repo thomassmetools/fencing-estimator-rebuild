@@ -137,25 +137,27 @@ export const EstimatorPage = ({ contractorMap }: EstimatorPageProps) => {
         } as CSSProperties
       }
     >
-      {!isEmbed && <section className="brand-banner">
-        <div>
-          <p className="eyebrow">{contractor.branding.heroLabel}</p>
-          <h1>{contractor.contact.businessName}</h1>
-          <p>{contractor.branding.introText}</p>
-        </div>
-        <div className="contact-panel">
+      {!isEmbed && (
+        <section className="brand-banner-horizontal">
           {contractor.branding.logoUrl ? (
-            <img src={contractor.branding.logoUrl} alt={contractor.contact.businessName} className="brand-logo" />
+            <div className="brand-banner-h-logo">
+              <img src={contractor.branding.logoUrl} alt={contractor.contact.businessName} className="brand-logo-h" />
+            </div>
           ) : null}
-          {contractor.contact.phone ? <span>{contractor.contact.phone}</span> : null}
-          {contractor.contact.email ? <span>{contractor.contact.email}</span> : null}
-          {hasFacebookUrl ? (
-            <a href={contractor.contact.facebookUrl} target="_blank" rel="noreferrer">
-              Facebook page
-            </a>
-          ) : null}
-        </div>
-      </section>}
+          <div className="brand-banner-h-name">
+            <p className="eyebrow">{contractor.branding.heroLabel}</p>
+            <h1>{contractor.contact.businessName}</h1>
+            <p>{contractor.branding.introText}</p>
+          </div>
+          <div className="brand-banner-h-contact">
+            {contractor.contact.phone ? <span>{contractor.contact.phone}</span> : null}
+            {contractor.contact.email ? <span>{contractor.contact.email}</span> : null}
+            {hasFacebookUrl ? (
+              <a href={contractor.contact.facebookUrl} target="_blank" rel="noreferrer">Facebook page</a>
+            ) : null}
+          </div>
+        </section>
+      )}
 
       <nav className="estimator-steps" aria-label="Estimator steps">
         <button

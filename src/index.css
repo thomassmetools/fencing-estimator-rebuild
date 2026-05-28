@@ -398,6 +398,7 @@ h2 {
   background: var(--surface-strong);
   color: var(--ink-strong);
   font-weight: 600;
+  white-space: nowrap;
   transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -463,28 +464,112 @@ a.primary:hover,
 }
 
 
-.brand-logo {
-  height: 72px;
-  max-width: 100%;
+/* ── Horizontal trust bar ────────────────────────────────────────── */
+.brand-banner-horizontal {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 20px 28px;
+}
+
+.brand-banner-h-logo {
+  display: flex;
+  align-items: center;
+  padding-right: 24px;
+  border-right: 1px solid var(--line);
+}
+
+.brand-logo-h {
+  height: 64px;
+  max-width: 160px;
   object-fit: contain;
   display: block;
-  background: #fff;
-  border-radius: 6px;
-  padding: 8px 12px;
+}
+
+.brand-banner-h-name h1 {
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
   margin-bottom: 4px;
 }
 
-.contact-panel {
-  display: grid;
-  align-content: start;
-  gap: 10px;
-  background: var(--brand-primary);
-  color: #fff9ef;
+.brand-banner-h-name p {
+  margin-bottom: 0;
+  color: var(--ink-soft);
 }
 
-.contact-panel a {
-  width: fit-content;
+.brand-banner-h-contact {
+  display: grid;
+  gap: 8px;
+  text-align: right;
+  padding-left: 24px;
+  border-left: 1px solid var(--line);
+  font-weight: 500;
+  font-size: 0.95rem;
 }
+
+.brand-banner-h-contact a {
+  color: var(--brand-primary);
+  text-decoration: none;
+  font-weight: 600;
+  justify-self: end;
+}
+
+@media (max-width: 720px) {
+  .brand-banner-horizontal {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 0;
+    padding: 14px 16px;
+  }
+
+  .brand-banner-h-logo {
+    padding-right: 12px;
+    border-right: none;
+    align-self: center;
+  }
+
+  .brand-logo-h {
+    height: 44px;
+    max-width: 100px;
+  }
+
+  .brand-banner-h-name {
+    align-self: center;
+  }
+
+  .brand-banner-h-name h1 {
+    font-size: 1.25rem;
+    margin-bottom: 2px;
+  }
+
+  .brand-banner-h-name p {
+    display: none;
+  }
+
+  .brand-banner-h-contact {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    gap: 10px 20px;
+    text-align: left;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid var(--line);
+    margin-top: 12px;
+    padding-top: 12px;
+    font-size: 0.88rem;
+  }
+
+  .brand-banner-h-contact a {
+    justify-self: auto;
+  }
+}
+
 
 .estimator-steps {
   display: grid;

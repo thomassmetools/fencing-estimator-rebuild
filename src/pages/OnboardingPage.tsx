@@ -19,6 +19,45 @@ const defaultProduct = (): Product => ({
   basePrice: 100,
 });
 
+const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: crypto.randomUUID(),
+    name: "Colorbond Steel Fencing",
+    description: "A tough, low-maintenance steel fence that comes in a range of colours to suit your home. It handles the weather, looks great, and lasts for decades.",
+    unit: "lineal metre",
+    basePrice: 95,
+    isFeatured: true,
+  },
+  {
+    id: crypto.randomUUID(),
+    name: "Timber Fencing",
+    description: "A classic, natural-looking fence that adds warmth and character to any property. Occasional staining or sealing keeps it looking great for years.",
+    unit: "lineal metre",
+    basePrice: 80,
+  },
+  {
+    id: crypto.randomUUID(),
+    name: "Glass Pool Fencing",
+    description: "Legally required for pools and it looks stunning. Keeps kids safe without blocking your view of the backyard.",
+    unit: "lineal metre",
+    basePrice: 165,
+  },
+  {
+    id: crypto.randomUUID(),
+    name: "Chain Wire / Mesh Fencing",
+    description: "A practical, budget-friendly option for keeping pets in or marking boundaries. Gets the job done at a low cost.",
+    unit: "lineal metre",
+    basePrice: 45,
+  },
+  {
+    id: crypto.randomUUID(),
+    name: "Aluminium / Steel Tubular Fencing",
+    description: "A sleek, modern-looking fence that requires almost zero maintenance and is very secure. Looks sharp and lasts a long time without any fuss.",
+    unit: "lineal metre",
+    basePrice: 110,
+  },
+];
+
 const normaliseColorValue = (value: string, fallback: string) => {
   const trimmed = value.trim();
   return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed : fallback;
@@ -44,7 +83,12 @@ export const OnboardingPage = () => {
           return;
         }
         setContext(result);
-        setDraft(result?.contractor ?? null);
+        const contractor = result?.contractor ?? null;
+        if (contractor && contractor.products.length === 0) {
+          setDraft({ ...contractor, products: INITIAL_PRODUCTS });
+        } else {
+          setDraft(contractor);
+        }
       })
       .catch((loadError) => {
         if (!active) {

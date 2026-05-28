@@ -31,8 +31,6 @@ export const ResultComposer = ({
   const [customerPhone, setCustomerPhone] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileNonce, setTurnstileNonce] = useState(0);
-  const [copyLabel, setCopyLabel] = useState("Copy result");
-  const [emailLabel, setEmailLabel] = useState("Email contractor");
   const [activeAction, setActiveAction] = useState<LeadSource | null>(null);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -130,28 +128,6 @@ export const ResultComposer = ({
     } finally {
       setActiveAction(null);
     }
-  };
-
-  const copyMessage = async () => {
-    const wasSaved = await persistLead("copy");
-    if (!wasSaved) {
-      return;
-    }
-
-    await navigator.clipboard.writeText(message);
-    setCopyLabel("Copied and saved");
-    window.setTimeout(() => setCopyLabel("Copy result"), 1800);
-  };
-
-  const emailContractor = async () => {
-    const wasSaved = await persistLead("email");
-    if (!wasSaved) {
-      return;
-    }
-
-    window.location.href = `mailto:${contractor.contact.email}?subject=Fence%20estimate%20request&body=${encodeURIComponent(message)}`;
-    setEmailLabel("Saved and opened");
-    window.setTimeout(() => setEmailLabel("Email contractor"), 1800);
   };
 
   const submitLead = async () => {
@@ -263,14 +239,8 @@ export const ResultComposer = ({
           )}
 
           <div className="action-row stretch">
-            <button type="button" className="primary" onClick={() => void copyMessage()}>
-              {activeAction === "copy" ? "Saving..." : copyLabel}
-            </button>
-            <button type="button" onClick={() => void submitLead()} disabled={activeAction !== null || submitStatus === "saved"}>
+            <button type="button" className="primary" onClick={() => void submitLead()} disabled={activeAction !== null || submitStatus === "saved"}>
               {activeAction === "submit" ? "Sending..." : submitStatus === "saved" ? "Enquiry sent" : "Send enquiry"}
-            </button>
-            <button type="button" onClick={() => void emailContractor()} disabled={activeAction !== null}>
-              {activeAction === "email" ? "Saving..." : emailLabel}
             </button>
           </div>
 

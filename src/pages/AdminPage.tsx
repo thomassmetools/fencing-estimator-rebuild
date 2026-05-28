@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { AdminAccountPanel } from "../components/AdminAccountPanel";
 import { AdminLeadList } from "../components/AdminLeadList";
-import { AdminOpsPanel } from "../components/AdminOpsPanel";
 import { AdminProductsTable } from "../components/AdminProductsTable";
 import { AdminSettingsForm } from "../components/AdminSettingsForm";
 import { AdminSubscriptionPanel } from "../components/AdminSubscriptionPanel";
@@ -264,9 +263,6 @@ export const AdminPage = ({ refreshPublicContractors }: AdminPageProps) => {
           error={subscriptionError}
           onRefresh={() => loadSubscription(contractor.id)}
         />
-        <AdminOpsPanel contractorId={contractor.id} />
-      </section>
-      <section className="admin-grid">
         <AdminAccountPanel email={contractor.contact.email} />
       </section>
       <AdminLeadList
