@@ -113,6 +113,8 @@ export interface SubscriptionRecord {
   stripeSubscriptionId: string | null;
   stripeCheckoutSessionId: string | null;
   currentPeriodEnd: string | null;
+  trialStart: string | null;
+  trialEnd: string | null;
   createdAt: string;
   updatedAt: string;
 }

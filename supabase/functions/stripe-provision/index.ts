@@ -10,6 +10,8 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const stripeWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
+const resendApiKey = Deno.env.get("RESEND_API_KEY") ?? "";
+const resendFromEmail = Deno.env.get("RESEND_FROM_EMAIL") ?? "";
 const publicSiteUrl = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://app.tradiestools.co.nz").replace(/\/$/, "");
 
 const adminClient = createClient(supabaseUrl, serviceRoleKey);
@@ -174,24 +176,115 @@ const ensureContractor = async ({
   return contractor.id as string;
 };
 
-const sendInviteEmail = async (email: string) => {
-  const redirectTo = `${publicSiteUrl}/welcome`;
-  const { error } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo });
+const buildWelcomeEmailText = (setupLink: string, isReturning: boolean): string => {
+  const greeting = isReturning
+    ? "Welcome back to TradiesTools."
+    : "Your TradiesTools trial has started — you have 14 days free, then $29/month AUD.";
 
-  if (error) {
-    const lower = error.message.toLowerCase();
+  return [
+    greeting,
+    "",
+    "Before you click the link below, it helps to have these 5 things ready.",
+    "Setup takes about 10 minutes once you have them.",
+    "",
+    "Checklist",
+    "---------",
+    "1. Business name — the trading name your customers know you by",
+    "2. Contact details — phone number, email address, and website URL",
+    "3. Facebook page URL — if you have one (used for the share button)",
+    "4. Fencing products + prices — the services you quote most often,",
+    "   e.g. Colorbond steel $145/lm, Timber paling $125/lm, Pool gate $590 each",
+    "5. Brand colours — your primary and accent hex codes, or pick them during setup",
+    "",
+    "You can also upload your logo once you're in.",
+    "",
+    "Set up your estimator",
+    "---------------------",
+    setupLink,
+    "",
+    "This link is single-use. If it expires, go to app.tradiestools.co.nz and sign in.",
+    "",
+    "— The TradiesTools team",
+  ].join("\n");
+};
+
+const sendWelcomeEmail = async (email: string) => {
+  const redirectTo = `${publicSiteUrl}/welcome`;
+
+  // Try to generate an invite link for a new user first
+  let setupLink: string | null = null;
+  let isReturning = false;
+
+  const { data: inviteData, error: inviteError } = await adminClient.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: { redirectTo },
+  });
+
+  if (inviteError) {
+    const lower = inviteError.message.toLowerCase();
     if (lower.includes("already registered") || lower.includes("already exists")) {
-      // User already has an auth account — send a magic link instead so they still get a setup email
-      const { error: otpError } = await adminClient.auth.signInWithOtp({
+      // Existing user — generate a magic link instead
+      isReturning = true;
+      const { data: magicData, error: magicError } = await adminClient.auth.admin.generateLink({
+        type: "magiclink",
         email,
-        options: { emailRedirectTo: redirectTo, shouldCreateUser: false },
+        options: { redirectTo },
       });
-      if (otpError) {
-        console.error("sendInviteEmail OTP fallback failed:", otpError.message);
+      if (magicError) {
+        console.error("sendWelcomeEmail magic link fallback failed:", magicError.message);
+      } else {
+        setupLink = magicData.properties?.action_link ?? null;
       }
-      return;
+    } else {
+      throw inviteError;
     }
-    throw error;
+  } else {
+    setupLink = inviteData.properties?.action_link ?? null;
+  }
+
+  // If Resend is configured and we have a link, send a custom welcome email
+  if (resendApiKey && resendFromEmail && setupLink) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: resendFromEmail,
+        to: [email],
+        subject: isReturning
+          ? "Your TradiesTools login link"
+          : "Your TradiesTools trial has started — here's what to prepare",
+        text: buildWelcomeEmailText(setupLink, isReturning),
+      }),
+    });
+
+    if (!response.ok) {
+      const responseText = await response.text();
+      console.error("sendWelcomeEmail Resend failed:", response.status, responseText);
+    }
+    return;
+  }
+
+  // Resend not configured — fall back to Supabase auth emails so dev/staging still works
+  if (!setupLink) {
+    // generateLink failed for existing user; fall back to OTP
+    const { error: otpError } = await adminClient.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirectTo, shouldCreateUser: false },
+    });
+    if (otpError) {
+      console.error("sendWelcomeEmail OTP fallback failed:", otpError.message);
+    }
+    return;
+  }
+
+  // New user, no Resend — send standard invite email
+  const { error: fallbackError } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo });
+  if (fallbackError) {
+    console.error("sendWelcomeEmail invite fallback failed:", fallbackError.message);
   }
 };
 
@@ -205,6 +298,8 @@ const upsertSubscription = async ({
   stripeSubscriptionId,
   stripeCheckoutSessionId,
   currentPeriodEnd,
+  trialStart,
+  trialEnd,
 }: {
   contractorId: string;
   customerEmail: string;
@@ -215,6 +310,8 @@ const upsertSubscription = async ({
   stripeSubscriptionId: string | null;
   stripeCheckoutSessionId: string | null;
   currentPeriodEnd: string | null;
+  trialStart: string | null;
+  trialEnd: string | null;
 }) => {
   const payload = {
     contractor_id: contractorId,
@@ -226,6 +323,8 @@ const upsertSubscription = async ({
     stripe_subscription_id: stripeSubscriptionId,
     stripe_checkout_session_id: stripeCheckoutSessionId,
     current_period_end: currentPeriodEnd,
+    trial_start: trialStart,
+    trial_end: trialEnd,
   };
 
   if (stripeCheckoutSessionId) {
@@ -365,6 +464,8 @@ const handleCheckoutCompleted = async (session: Stripe.Checkout.Session) => {
   let stripeSubscriptionId: string | null = null;
   let status = session.payment_status === "paid" ? "active" : "pending";
   let currentPeriodEnd: string | null = null;
+  let trialStart: string | null = null;
+  let trialEnd: string | null = null;
 
   if (typeof session.subscription === "string") {
     stripeSubscriptionId = session.subscription;
@@ -373,6 +474,12 @@ const handleCheckoutCompleted = async (session: Stripe.Checkout.Session) => {
       status = subscription.status;
       currentPeriodEnd = subscription.current_period_end
         ? new Date(subscription.current_period_end * 1000).toISOString()
+        : null;
+      trialStart = subscription.trial_start
+        ? new Date(subscription.trial_start * 1000).toISOString()
+        : null;
+      trialEnd = subscription.trial_end
+        ? new Date(subscription.trial_end * 1000).toISOString()
         : null;
     } catch (err) {
       console.error("stripe.subscriptions.retrieve failed:", err instanceof Error ? err.message : String(err));
@@ -389,9 +496,11 @@ const handleCheckoutCompleted = async (session: Stripe.Checkout.Session) => {
     stripeSubscriptionId,
     stripeCheckoutSessionId: session.id,
     currentPeriodEnd,
+    trialStart,
+    trialEnd,
   });
 
-  await sendInviteEmail(customerEmail);
+  await sendWelcomeEmail(customerEmail);
 };
 
 const handleSubscriptionChange = async (subscription: Stripe.Subscription) => {

@@ -47,12 +47,15 @@ const billingSummary = (subscription: SubscriptionRecord | null, billingEvents: 
     (!latestFailure || (latestSuccess && new Date(latestSuccess.occurredAt) > new Date(latestFailure.occurredAt)));
 
   if (isHealthy) {
+    const isTrialing = subscription.status === "trialing";
     return {
       tone: "success-text",
       headline: "Billing looks healthy.",
       detail: latestSuccess
         ? `Latest successful renewal was ${formatDateTime(latestSuccess.occurredAt)}. Next renewal is ${subscription.currentPeriodEnd ? formatDateTime(subscription.currentPeriodEnd) : "not available yet"}.`
-        : `The subscription is ${subscription.status} and currently renews on ${subscription.currentPeriodEnd ? formatDateTime(subscription.currentPeriodEnd) : "not available yet"}.`,
+        : isTrialing
+          ? `Free trial ends on ${subscription.trialEnd ? formatDateTime(subscription.trialEnd) : "not available yet"}. Billing starts automatically after that.`
+          : `The subscription is active and renews on ${subscription.currentPeriodEnd ? formatDateTime(subscription.currentPeriodEnd) : "not available yet"}.`,
     } as const;
   }
 
@@ -132,8 +135,12 @@ export const AdminSubscriptionPanel = ({
               <strong>{subscription.status}</strong>
             </div>
             <div>
-              <span className="summary-label">Renews</span>
-              <strong>{subscription.currentPeriodEnd ? formatDateTime(subscription.currentPeriodEnd) : "Not available"}</strong>
+              <span className="summary-label">{subscription.status === "trialing" ? "Trial ends" : "Renews"}</span>
+              <strong>
+                {subscription.status === "trialing"
+                  ? (subscription.trialEnd ? formatDateTime(subscription.trialEnd) : "Not available")
+                  : (subscription.currentPeriodEnd ? formatDateTime(subscription.currentPeriodEnd) : "Not available")}
+              </strong>
             </div>
             <div>
               <span className="summary-label">Last Stripe sync</span>

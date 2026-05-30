@@ -87,6 +87,8 @@ type SubscriptionRow = {
   stripe_subscription_id: string | null;
   stripe_checkout_session_id: string | null;
   current_period_end: string | null;
+  trial_start: string | null;
+  trial_end: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -270,6 +272,8 @@ const mapSubscription = (row: SubscriptionRow): SubscriptionRecord => ({
   stripeSubscriptionId: row.stripe_subscription_id,
   stripeCheckoutSessionId: row.stripe_checkout_session_id,
   currentPeriodEnd: row.current_period_end,
+  trialStart: row.trial_start ?? null,
+  trialEnd: row.trial_end ?? null,
   createdAt: row.created_at,
   updatedAt: row.updated_at ?? row.created_at,
 });
@@ -619,6 +623,8 @@ export const fetchLatestSubscription = async (contractorId: string): Promise<Sub
       stripe_subscription_id,
       stripe_checkout_session_id,
       current_period_end,
+      trial_start,
+      trial_end,
       created_at,
       updated_at
     `)
